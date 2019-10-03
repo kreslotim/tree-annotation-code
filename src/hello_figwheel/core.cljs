@@ -3,6 +3,192 @@
             [clojure.string :as str]
             [markdown-to-hiccup.core :as md]))
 
+;----------------------;
+; Database boilerplate ;
+;----------------------;
+
+(defonce db (r/atom 
+  {:input-str    "Dm G7 C"
+   :output-str   ""
+   :rename-label ""
+   :nodes        {}
+  }))
+
+
+(defn get-input-str []
+  (:input-str @db))
+
+(defn set-input-str [input-str]
+  (swap! db assoc :input-str input-str))
+
+
+(defn get-output-str []
+  (:output-str @db))
+
+(defn set-output-str [output-str]
+  (swap! db assoc :output-str output-str))
+
+
+(defn get-rename-label []
+  (:rename-label @db))
+
+(defn set-rename-label [label]
+  (swap! db assoc :rename-label label))
+
+(defn get-node-coords-under-renaming []
+  (->> (:nodes @db)
+       (filter (fn [[coord {state :state}]] (= :rename state)))
+       (map key)))
+
+
+(defn get-node-state [coord] 
+  (get-in @db [:nodes coord :state]))
+
+(defn set-node-state [coord new-state]
+  (swap! db assoc-in [:nodes coord :state] new-state))
+
+(defn toggle-select [coord]
+  "Select a node if it is not selected or 
+   unselect it if it is selected."
+  (let [new-state (case (get-node-state coord)
+                     :selected :not-selected
+                     :not-selected :selected)]
+    (set-node-state coord new-state)))
+
+(defn get-node-label [coord] 
+  (get-in @db [:nodes coord :label]))
+
+(defn set-node-label [coord new-label]
+  (swap! db assoc-in [:nodes coord :label] new-label))
+
+(defn get-node-length [coord]
+  (get-in @db [:nodes coord :length]))
+
+(defn get-node-coords []
+  (map key (:nodes @db)))
+
+(defn get-selected-node-coords []
+  (->> (:nodes @db)
+       (filter (fn [[coord {state :state}]] (= :selected state)))
+       (map key)))
+
+(defn get-children-coords [coord]
+  (get-in @db [:nodes coord :children-coords]))
+
+(defn add-node [{:keys [x y length label children-coords state]}]
+  (let [properties {:length length
+                    :label label
+                    :children-coords children-coords
+                    :state state}]
+    (swap! db assoc-in [:nodes [x y]] properties)))
+
+(defn delete-all-nodes []
+  (swap! db assoc :nodes {}))
+
+(defn delete-node [coord]
+  (swap! db (fn [db] (let [nodes (dissoc (:nodes db) coord)]
+                       (assoc db :nodes nodes)))))
+
+(defn delete-selected-nodes []
+  (doall (for [coord (get-selected-node-coords)]
+           (delete-node coord))))
+
+;----------------;
+; Node component ;
+;----------------;
+
+(def button-width 60)
+(def button-height 20)
+
+(defn button-style [coord]
+  (let [[x y]  coord
+        length (get-node-length coord)]
+    {:position     "absolute"
+     :left         (* x button-width)
+     :top          (* y button-height)
+     :width        (dec (* button-width length))
+     :height       (dec button-height)
+     :border-style "solid"
+     :border-color "#555"
+     :text-align   "center"}))
+
+(defn node-component [coord]
+  "Create a component (a button or text field) from a node."
+  (let [state (get-node-state coord)]
+    (if (= state :rename)
+          [:input {:auto-focus true
+                   :type "text" 
+                   :value (get-rename-label)
+                   :style (assoc (button-style coord) :z-index 1)
+                   :on-change #(set-rename-label (-> % .-target .-value))}]
+        (let [style (assoc (button-style coord)
+                           :background-color 
+                           (case state :selected     "#8E0" 
+                                       :not-selected "#CCC"))]
+          [:button
+            {:style style :on-click #(toggle-select coord)} 
+            (get-node-label coord)]))))
+
+(defn tree-annotation-component []
+  (into
+    [:div {:style {:position "relative"}}]
+    (map node-component (get-node-coords))))
+
+;-----------------;
+; Input component ;
+;-----------------;
+
+(defn leaf [i label]
+  {:x i :y 0 :length 1 :label label :children [] :state :not-selected})
+
+(defn reset-leafs []
+  "Create leaf nodes from an input string which is split on spaces."
+  (let [labels (str/split (get-input-str) #" ")
+        indices (range 0 (count labels))]
+    (do (delete-all-nodes))
+        (doall (->> (map vector indices labels)
+                    (map (partial apply leaf))
+                    (map add-node)))))
+
+(defn input-component []
+  [:div
+    [:button {:on-click #(reset-leafs)} "load terminals"]
+    " "
+    [:input {:type "text" 
+             :value (get-input-str)
+             :style {:width 500} 
+             :on-change #(set-input-str (-> % .-target .-value))}]])
+
+;------------------;
+; Output component ;
+; -----------------;
+
+(defn tree-str [coord]
+  (let [coords (get-children-coords coord)
+        label  (get-node-label coord)]
+    (if (empty? coords) ; if the node is a leaf
+        (str "$" label "$ ")
+        (apply str 
+          (concat ["[.$" label "$ "] 
+                  (map tree-str coords)
+                  ["] "])))))
+
+(defn compute-&-set-output-string []
+  (let [coords (get-selected-node-coords)]
+    (if (= 1 (count coords))
+        (-> coords first tree-str set-output-str)
+        (js/alert "Select exactly one node to compute its tree string."))))
+
+(defn output-component []
+  [:div
+    [:button {:on-click #(compute-&-set-output-string)} "create tree string"]
+    " "
+    [:span {} (get-output-str)]])
+
+;------------------;
+; Manual component ;
+;------------------;
+
 (def manual-string "
 
 # Tree Annotation Tool
@@ -17,185 +203,75 @@
 
 ")
 
-(def initial-input-string "Dm G7 C")
-
-(def button-width 60)
-(def button-height 20)
-
-(defn x-coord [x] (* x button-width))
-(defn y-coord [x] (* x button-height))
-
-(defn button-style [{:keys [x y length]}]
-  {:position     "absolute" 
-   :left         (x-coord x)
-   :top          (y-coord y)
-   :width        (dec (* button-width length))
-   :height       (dec button-height)
-   :border-style "solid"
-   :border-color "#555"
-   :text-align   "center"})
-
-(defn node [x y length label children]
-  "Create a tree node that will be rendered as a button."
-  {:x        x
-   :y        y
-   :length   length
-   :label    label
-   :children children})
-
-(defn leaf [i label]
-  "Leafs are terminal nodes"
-  (node i 0 1 label []))
-
-(defn leafs [input-string]
-  "Create leaf nodes from an input string which will be split on spaces."
-  (let [labels (str/split input-string #" ")
-        indices (range 0 (count labels))]
-    (map (partial apply leaf)
-         (map vector indices labels))))
-
-(defonce nodes (r/atom {}))
-  ; (apply merge (map #(hash-map % :not-selected) (leafs initial-input-string)))))
-
-(defn toggle-select [node]
-  "Select a node if it is not selected or 
-   unselect it if it is selected."
-  (let [new-state (case (@nodes node)
-                     :selected :not-selected
-                     :not-selected :selected)]
-    (swap! nodes assoc node new-state)))
-
-(defonce rename-buffer (r/atom ""))
-
-(defn button<-node [node]
-  "Create a react component (a button) from a node."
-  (let [status (@nodes node)]
-    (if (= status :rename)
-          [:input {:auto-focus true
-                   :type "text" 
-                   :value @rename-buffer
-                   :style (assoc (button-style node) :z-index 1) ; (assoc :width (- (:width node) 100)))
-                   :on-change #(reset! rename-buffer (-> % .-target .-value))}]
-                  ;  :onkeydown (fn [event] (when (= 27 (.-keyCode event)) ; Esc key pressed
-                                ;  (js/alert "hi") 
-                                ;  (swap! nodes dissoc node)
-                                ;  (swap! nodes assoc (assoc node :label @rename-buffer) :selected) ))}]
-        (let [style (-> (button-style node)
-                        (assoc :background-color 
-                          (case status :selected "#8E0" :not-selected "#CCC")))]
-          [:button
-            {:style style :on-click (fn [] (toggle-select node))} 
-            (:label node)]))))
-
-(defmulti tree-str (comp count :children))
-(defmethod tree-str 0 [{label :label}]
-  (str "$" label "$ "))
-(defmethod tree-str 1 [{label :label, [child] :children}]
-  (str "[.$" label "$ " (tree-str child) "] "))
-(defmethod tree-str 2 [{label :label, [child1 child2] :children}]
-  (str "[.$" label "$ " (tree-str child1) " " (tree-str child2) "] "))
-
-(defn output-treestring [treestr-atom]
-  (reset! treestr-atom "ho"))
-
-(defn output-component []
-  (let [treestr-atom (r/atom "")]
-    (fn []
-      [:div
-        [:button {:on-click #(output-treestring treestr-atom)} "create treestring"]
-        " "
-        [:span {} @treestr-atom]])))
-
 (defn manual-component []
   (md/md->hiccup manual-string))
 
-(defn tree-annotation-component []
-  (into
-    [:div {:style {:position "relative"}}]
-    (map button<-node (keys @nodes))))
-
-(defonce input-string (r/atom initial-input-string))
-
-(defn load-terminals []
-  (reset! nodes (apply merge (map #(hash-map % :not-selected) 
-                                   (leafs @input-string)))))
-
-(defn leaf-input-component []
-  [:div
-    [:button {:on-click #(load-terminals)} "load terminals"]
-    " "
-    [:input {:type "text" 
-             :value @input-string
-             :style {:width 500} 
-             :on-change #(reset! input-string (-> % .-target .-value))}]])
+;---------------;
+; App component ;
+;---------------;
 
 (defn app-component []
   [:div
    [manual-component]
-   [leaf-input-component]
+   [input-component]
    [output-component]
-   [tree-annotation-component]])
-
-(defn nodes-with-status [s]
-  (->> @nodes
-       (filter #(= s (val %)))
-       (map key)
-       (sort #(compare (:x %1) (:x %2)))))
-
-(defn selected-nodes []
-  (nodes-with-status :selected))
-
-(defn create-new-node []
-  (let [children        (selected-nodes)
-        leftmost-child  (first children)
-        rightmost-child (last  children)
-        x               (:x leftmost-child)
-        y               (inc (reduce max (map :y children)))
-        length          (reduce + (map :length children))
-        label           (:label rightmost-child)
-        new-node        (node x y length label children)]
-    (if (= length (- (+ (:length rightmost-child) (:x rightmost-child)) x))
-        (do
-          (doall (map #(swap! nodes assoc % :not-selected) children))
-          (swap! nodes assoc new-node :selected))
-        (js/alert "Only adjacent nodes can be merged."))))
-
-(defn delete-nodes []
-  (doall (map #(swap! nodes dissoc (key %)) (filter #(= :selected (val %)) @nodes))))
-
-(defn alert-tree []
-  (let [s-nodes (selected-nodes)]
-    (if (= 1 (count s-nodes))
-        (js/alert (tree-str (first s-nodes)))
-        (js/alert "Only a single node must be selected to compute its tree string."))))
-
-(defn rename-node []
-  (let [s-nodes (selected-nodes)]
-    (if (and (= 1 (count s-nodes)) (empty? (nodes-with-status :rename)))
-        (let [node (first s-nodes)]
-          (do (swap! nodes assoc node :rename)
-              (reset! rename-buffer (:label node))))
-        (js/alert "Exactly one node must be selected for renaming."))))
+   [tree-annotation-component]
+   ])
 
 (defn render []
   (r/render [app-component] (.-body js/document)))
+
+(render)
+
+;-------------------;
+; Onkeypress events ;
+;-------------------;
+
+(defn create-new-node []
+  (let [children-coords    (sort #(compare (get %1 0) (get %2 0)) (get-selected-node-coords))
+        leftmost-coord     (first children-coords)
+        rightmost-coord    (last  children-coords)
+        new-node           {:x               (leftmost-coord 0)
+                            :y               (inc (reduce max (map #(get % 1) children-coords)))
+                            :length          (reduce + (map get-node-length children-coords))
+                            :label           (get-node-label rightmost-coord)
+                            :children-coords children-coords
+                            :state           :selected}
+        children-adjacent? (= (:length new-node)
+                              (- (+ (get-node-length rightmost-coord)
+                                    (rightmost-coord 0))
+                                 (:x new-node)))]
+    (if children-adjacent?
+        (do (doall (map toggle-select children-coords))
+            (add-node new-node))
+        (js/alert "Only adjacent nodes can be merged."))))
+
+(defn start-rename-node []
+  (let [coords (get-selected-node-coords)]
+    (if (and (= 1 (count coords)) (empty? (get-node-coords-under-renaming)))
+        (let [coord (first coords)]
+          (do (set-node-state coord :rename)
+              (set-rename-label (get-node-label coord))))
+        (js/alert "Exactly one node must be selected for renaming."))))
 
 (set! (.-onkeypress js/document)
       (fn [event] 
         (case (.-keyCode event)
           ; enter key pressed
-          13 (let [r-nodes (nodes-with-status :rename)]
-               (if (and (empty? r-nodes) (seq (selected-nodes)))
+          13 (let [coords (get-node-coords-under-renaming)]
+               (if (and (empty? coords) (seq (get-selected-node-coords)))
                    (create-new-node)
-                   (let [node (first r-nodes)]
-                     (do (swap! nodes dissoc node)
-                         (swap! nodes assoc (assoc node :label @rename-buffer) :selected)))))
+                   (let [coord (first coords)]
+                     (do (set-node-label coord (get-rename-label))
+                         (set-node-state coord :selected)))))
+                    ;  (swap! nodes dissoc node)
+                        ;  (swap! nodes assoc (assoc node :label (get-rename-label)) :selected)))))
           ; backspace key pressed
-          8 (delete-nodes)
+          8 (delete-selected-nodes)
           ; key 't' pressed
-          116 (alert-tree)
+          ; 116 (alert-tree)
           ; key 'r' pressed
-          114 (rename-node)
+          114 (start-rename-node)
           ;(println (.-keyCode event))
           )))
 
@@ -207,5 +283,3 @@
 ; backspace <-> 8
 
 ; (set! (.-onkeypress js/document) (fn [event] (println (.-keyCode event))))
-
-(render)
