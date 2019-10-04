@@ -98,8 +98,26 @@
        (filter (fn [[coord {state :state}]] (= :selected state)))
        (map key)))
 
+;------------------------;
+; Node children requests ;
+;------------------------;
+
 (defn get-children-coords [coord]
   (get-in @db [:nodes coord :children-coords]))
+
+(defn leaf? [coord]
+  (empty? (get-children-coords coord)))
+
+(defn last-leaf? [coord]
+  (and (leaf? coord)
+       (= (first coord)
+          (->> (get-node-coords)
+               (map first)
+               (apply max)))))
+
+(defn last-leaf-or-inner-node? [coord]
+  (or (last-leaf? coord)
+      (not (leaf? coord))))
 
 ;----------------------;
 ; Node parent requests ;
@@ -142,11 +160,12 @@
   (swap! db assoc :nodes {}))
 
 (defn del-node [coord]
-  (do (del-ancestors coord)
-      (swap! db 
-        (fn [db]
-          (assoc db :nodes 
-            (dissoc (:nodes db) coord))))))
+  (when (last-leaf-or-inner-node? coord)
+    (do (del-ancestors coord)
+        (swap! db 
+          (fn [db]
+            (assoc db :nodes 
+              (dissoc (:nodes db) coord)))))))
 
 (defn del-selected-nodes []
   (doall (for [coord (get-selected-node-coords)]

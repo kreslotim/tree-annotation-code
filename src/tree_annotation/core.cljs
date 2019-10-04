@@ -144,6 +144,7 @@ This is an open source project. Find the code here.
 - `Comma` opens a text field to rename a selected node. 
   Submit the new name by pressing `Enter`.
 - `Backspace` deletes all selected nodes and their ancestors.
+  Only inner nodes or the last leaf node can be deleted.
 - `Esc` deselects all nodes.
 
 ")
