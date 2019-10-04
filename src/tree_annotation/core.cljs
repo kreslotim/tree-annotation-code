@@ -63,11 +63,12 @@
 
 (defn input-component []
   [:div
+    {:style {:position "relative"}}
     [:button {:on-click #(reset-leafs)} "load sequence"]
-    " "
     [:input {:type "text" 
              :value (db/get-input-str)
-             :style {:width 500} 
+             :size (+ (count (db/get-input-str)) 2) 
+             :style {:position "absolute" :left 120}
              :on-change #(db/set-input-str (-> % .-target .-value))}]])
 
 ;------------------;
@@ -102,9 +103,13 @@
 
 (defn output-component []
   [:div
-    [:button {:on-click #(compute-&-set-output-string)} "create tree string"]
-    " "
-    [:span {} (db/get-output-str)]])
+    {:style {:position "relative"}}
+    [:button 
+      {:on-click #(compute-&-set-output-string)} 
+      "create tree string"]
+    [:span 
+      {:style {:position "absolute" :left 120 :font-size 15}} 
+      (db/get-output-str)]])
 
 ;------------------;
 ; Manual component ;
@@ -134,7 +139,7 @@ This is an open source project. Find the code here.
    The string is also copied to the clipboard.
 1. Render the tree in a latex document using the *tikz-qtree* package.
 
-##  Additional functionality
+##  Additional Functionality
 
 - `Comma` opens a text field to rename a selected node. 
   Submit the new name by pressing `Enter`.
@@ -144,19 +149,23 @@ This is an open source project. Find the code here.
 ")
 
 (defn manual-component []
-  (md/md->hiccup manual-string))
+  [:div
+    {:style {:max-width 600 :border-style "solid" :padding 20}}
+    (md/md->hiccup manual-string)])
 
 ;---------------;
 ; App component ;
 ;---------------;
 
 (defn app-component []
-  [:div
-   [manual-component]
-   [input-component]
-   [output-component]
-   [tree-annotation-component]
-   ])
+  [:div {:style {:font-family "Helvetica Neue"}}
+    [manual-component]
+    [:div {:style {:height 30}}]
+    [:div [input-component] ]
+    [:br]
+    [:div [output-component] ]
+    [:br]
+    [tree-annotation-component]])
 
 (defn render []
   (r/render [app-component] (.-body js/document)))
