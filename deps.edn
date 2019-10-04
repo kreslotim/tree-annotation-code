@@ -1,7 +1,9 @@
 {:deps {org.clojure/clojure {:mvn/version "1.9.0"}
         org.clojure/clojurescript {:mvn/version "1.10.339"}
         reagent {:mvn/version "0.8.1"}
-        markdown-to-hiccup {:mvn/version "0.6.2"}}
+        markdown-to-hiccup {:mvn/version "0.6.2"}
+        instaparse {:mvn/version "1.4.10"}} ;{:git/url "https://github.com/Engelberg/instaparse"
+                    ; :sha "4d1903b059e77dc0049dfbc75af9dce995756148"}}
  :paths ["src" "resources"]
  :aliases {:fig {:extra-deps
                   {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}

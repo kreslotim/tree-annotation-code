@@ -1,8 +1,11 @@
 (ns tree-annotation.core
   (:require [reagent.core :as r]
             [clojure.string :as str]
+            [clojure.pprint :as pp]
             [markdown-to-hiccup.core :as md]
+            [instaparse.core :as insta :refer-macros [defparser]]
             [tree-annotation.database :as db]))
+
 
 ;----------------;
 ; Node component ;
@@ -70,6 +73,16 @@
              :size (+ (count (db/get-input-str)) 2) 
              :style {:position "absolute" :left 120}
              :on-change #(db/set-input-str (-> % .-target .-value))}]])
+
+;---------------------;
+; Load tree component ;
+;---------------------;
+
+(defparser tree-parser "
+  node = leaf | <'[.'> label <' '> node+ <']'> ' '?
+  leaf = label <' '>
+  label = #'[^\\[\\]. ]+'
+  ")
 
 ;------------------;
 ; Output component ;
@@ -230,10 +243,3 @@ This is an open source project. Find the code here.
           ; esc key pressed
           "Escape" (deselect-all-nodes)
           )))
-
-; key codes
-; enter <-> 13
-; space <-> 32
-; backspace <-> 8
-
-; (set! (.-onkeypress js/document) (fn [event] (println (.-keyCode event))))
