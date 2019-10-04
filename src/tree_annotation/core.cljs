@@ -135,7 +135,7 @@
 by [Daniel Harasim](https://dcml.epfl.ch/lab/harasim/) 
 and the [Digital and Cognitive Musicology Lab (DCML)](https://dcml.epfl.ch)
 
-This is an open source project. Find the code here.
+This is an open source project. Find the code [here](https://github.com/DCMLab/tree-annotation-code).
 
 ## Quickstart
 
