@@ -53,9 +53,9 @@
 ;-----------------;
 
 (defn leaf [i label]
-  {:x i :y 0 :length 1 :label label :children [] :state :not-selected})
+  {:x i :y 0 :length 1 :label label :children-coords [] :state :not-selected})
 
-(defn reset-leafs []
+(defn load-input-sequence []
   "Create leaf nodes from an input string which is split on spaces."
   (let [labels (str/split (db/get-input-str) #" ")
         indices (range 0 (count labels))]
@@ -64,25 +64,63 @@
                     (map (partial apply leaf))
                     (map db/add-node)))))
 
-(defn input-component []
+(defn sequence-input-component []
   [:div
     {:style {:position "relative"}}
-    [:button {:on-click #(reset-leafs)} "load sequence"]
-    [:input {:type "text" 
-             :value (db/get-input-str)
-             :size (+ (count (db/get-input-str)) 2) 
-             :style {:position "absolute" :left 120}
-             :on-change #(db/set-input-str (-> % .-target .-value))}]])
+    [:button {:on-click #(load-input-sequence)} "load sequence"]
+    [:textarea {:value (db/get-input-str)
+                :size (+ (count (db/get-input-str)) 2) 
+                :style {:position "absolute" :left 120 :width 520}
+                :on-change #(db/set-input-str (-> % .-target .-value))}]])
 
 ;---------------------;
 ; Load tree component ;
 ;---------------------;
 
 (defparser tree-parser "
-  node = leaf | <'[.'> label <' '> node+ <']'> ' '?
-  leaf = label <' '>
-  label = #'[^\\[\\]. ]+'
+  node = (label | <'[.'> label children <']'>) <' '?>
+  children = node+
+  label = <'$'> #'[^$\\[\\]. ]+' <'$ '>
   ")
+
+(defn parse-tree->nodes [tree]
+  (let [leaf-index (atom -1)
+        next-index (fn [] (swap! leaf-index inc))
+        nodes      (atom [])
+        add-node   (fn [node] (swap! nodes conj node))
+        tree->node 
+          (fn tree->node [[_ [_ label] [_ & children]]]
+            (if children
+                (let [child-nodes (map tree->node children)
+                      node {:x               (-> child-nodes first :x)
+                            :y               (-> child-nodes first :y inc)
+                            :length          (transduce (map :length) + child-nodes)
+                            :label           label
+                            :children-coords (map #(vector (:x %) (:y %)) child-nodes)
+                            :state           :not-selected}]
+                  (add-node node)
+                  node)
+                (let [node (leaf (next-index) label)]
+                  (add-node node)
+                  node)))]
+    (tree->node tree)
+    @nodes))
+    
+(defn load-tree-string []
+  (db/del-all-nodes)
+  (doall (->> (db/get-input-tree-str)
+              (tree-parser)
+              (parse-tree->nodes)
+              (map db/add-node))))
+
+(defn tree-input-component []
+  [:div
+    {:style {:position "relative"}}
+    [:button {:on-click #(load-tree-string)} "load qtree string"]
+    [:textarea {:value (db/get-input-tree-str)
+                :size (+ (count (db/get-input-tree-str)) 2) 
+                :style {:position "absolute" :left 120 :width 520}
+                :on-change #(db/set-input-tree-str (-> % .-target .-value))}]])
 
 ;------------------;
 ; Output component ;
@@ -120,9 +158,9 @@
     [:button 
       {:on-click #(compute-&-set-output-string)} 
       "create tree string"]
-    [:span 
-      {:style {:position "absolute" :left 120 :font-size 15}} 
-      (db/get-output-str)]])
+    [:textarea {:value (db/get-output-str)
+                :style {:position "absolute" :left 120 :width 520}
+                :readonly "readonly"}]])
 
 ;------------------;
 ; Manual component ;
@@ -154,11 +192,13 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 
 ##  Additional Functionality
 
-- `Comma` opens a text field to rename a selected node. 
+- `Ctrl` + `R` opens a text field to rename a selected node. 
   Submit the new name by pressing `Enter`.
-- `Backspace` deletes all selected nodes and their ancestors.
+- `Ctrl` + `D` deletes all selected nodes and their ancestors.
   Only inner nodes or the last leaf node can be deleted.
 - `Esc` deselects all nodes.
+- You can also edit an existing qtree string by loading it 
+  using the *load qtree string* button.
 
 ")
 
@@ -167,18 +207,27 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
     {:style {:max-width 600 :border-style "solid" :padding 20}}
     (md/md->hiccup manual-string)])
 
+(defn toggle-manual-component []
+  [:button {:on-click #(db/toggle-manual)} 
+           "toggle manual"])
+
 ;---------------;
 ; App component ;
 ;---------------;
 
 (defn app-component []
   [:div {:style {:font-family "Helvetica Neue"}}
-    [manual-component]
+    (when (db/show-manual?) [manual-component])
     [:div {:style {:height 30}}]
-    [:div [input-component] ]
+    [:div [toggle-manual-component] ]
+    [:br]
+    [:div [sequence-input-component] ]
+    [:br]
+    [:div [tree-input-component] ]
     [:br]
     [:div [output-component] ]
     [:br]
+    [:div {:style {:height 20}}]
     [tree-annotation-component]])
 
 (defn render []
@@ -224,22 +273,18 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
     (for [coord (db/get-node-coords)]
       (db/set-node-state coord :not-selected))))
 
-(set! (.-onkeypress js/document)
-      (fn [event] 
+(set! (.-onkeydown js/document)
+      (fn [event]
         (case (.-code event)
-          ; enter key pressed
-          "Enter" (let [coords (db/get-node-coords-under-renaming)]
-               (if (and (empty? coords) (seq (db/get-selected-node-coords)))
-                   (create-new-node)
-                   (let [coord (first coords)]
-                     (do (db/set-node-label coord (db/get-rename-label))
-                         (db/set-node-state coord :selected)))))
-                    ;  (swap! nodes dissoc node)
-                        ;  (swap! nodes assoc (assoc node :label (get-rename-label)) :selected)))))
-          ; backspace key pressed
-          "Backspace" (db/del-selected-nodes)
-          ; tab key pressed
-          "Comma" (start-rename-node)
-          ; esc key pressed
+          "Enter" 
+            (let [coords (db/get-node-coords-under-renaming)]
+              (if (and (empty? coords) (some? (db/get-selected-node-coords)))
+                  (create-new-node)
+                  (let [coord (first coords)]
+                    (do (db/set-node-label coord (db/get-rename-label))
+                        (db/set-node-state coord :selected)))))
           "Escape" (deselect-all-nodes)
-          )))
+        (when (.-ctrlKey event)
+          (case (.-code event)
+            "KeyR" (when (.-ctrlKey event) (start-rename-node))
+            "KeyD" (db/del-selected-nodes))))))

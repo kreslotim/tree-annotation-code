@@ -7,21 +7,33 @@
 
 ; private annotation does currently not work in clojure script
 (defonce ^:private db (r/atom 
-  {:input-str    "Dm G7 C"
-   :output-str   ""
-   :rename-label ""
-   :nodes        {}
+  {:input-str      "Dm G7 C"
+   :input-tree-str "[.$C$ [.$G7$ $Dm$ $G7$ ] $C$ ] "
+   :output-str     ""
+   :rename-label   ""
+   :nodes          {}
+   :show-manual    true
   }))
 
 ;-----------------------;
 ; Input string requests ;
 ;-----------------------;
 
-(defn ^:private get-input-str []
+(defn get-input-str []
   (:input-str @db))
 
 (defn set-input-str [input-str]
   (swap! db assoc :input-str input-str))
+
+;-----------------------;
+; Input string requests ;
+;-----------------------;
+
+(defn get-input-tree-str []
+  (:input-tree-str @db))
+
+(defn set-input-tree-str [input-tree-str]
+  (swap! db assoc :input-tree-str input-tree-str))
 
 ;------------------------;
 ; Output string requests ;
@@ -170,3 +182,13 @@
 (defn del-selected-nodes []
   (doall (for [coord (get-selected-node-coords)]
            (del-node coord))))
+
+;-----------------;
+; Manual requests ;
+;-----------------;
+
+(defn show-manual? []
+  (@db :show-manual))
+
+(defn toggle-manual []
+  (swap! db #(assoc % :show-manual (not (% :show-manual)))))
