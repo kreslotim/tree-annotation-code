@@ -173,7 +173,16 @@
 
 (defn del-node [coord]
   (when (last-leaf-or-inner-node? coord)
-    (do (del-ancestors coord)
+    (do ; delete all ancestors of the node (parent, grand-parent, ...)
+        (del-ancestors coord)
+        ; delete node coord as the parent of its children
+        (doall 
+          (for [child-coord (get-children-coords coord)]
+            (swap! db
+              (fn [db]
+                (assoc-in db [:nodes child-coord]
+                  (dissoc (get-in db [:nodes child-coord]) :parent-coord))))))
+        ; delete the node itself
         (swap! db 
           (fn [db]
             (assoc db :nodes 

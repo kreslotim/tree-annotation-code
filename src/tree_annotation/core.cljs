@@ -239,26 +239,30 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 ; Onkeypress events ;
 ;-------------------;
 
+(defn has-parent? [coord]
+  (some? (db/get-parent-coord coord)))
+
 (defn create-new-node []
   (let [children-coords    (sort #(compare (get %1 0) (get %2 0)) 
                                  (db/get-selected-node-coords))
         leftmost-coord     (first children-coords)
         rightmost-coord    (last  children-coords)
         new-node           
-          {:x              (leftmost-coord 0)
-          :y               (inc (reduce max (map #(get % 1) children-coords)))
-          :length          (reduce + (map db/get-node-length children-coords))
-          :label           (db/get-node-label rightmost-coord)
-          :children-coords children-coords
-          :state           :selected}
+          {:x               (leftmost-coord 0)
+           :y               (inc (reduce max (map #(get % 1) children-coords)))
+           :length          (reduce + (map db/get-node-length children-coords))
+           :label           (db/get-node-label rightmost-coord)
+           :children-coords children-coords
+           :state           :selected}
         children-adjacent? (= (:length new-node)
                               (- (+ (db/get-node-length rightmost-coord)
                                     (rightmost-coord 0))
                                  (:x new-node)))]
-    (if children-adjacent?
+    (if (and children-adjacent?
+             (not-any? has-parent? children-coords))
         (do (doall (map db/toggle-select children-coords))
             (db/add-node new-node))
-        (js/alert "Only adjacent nodes can be merged."))))
+        (js/alert "Only adjacent nodes that don't have parents can be merged."))))
 
 (defn start-rename-node []
   (let [coords (db/get-selected-node-coords)]
