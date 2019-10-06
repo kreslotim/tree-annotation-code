@@ -47,7 +47,7 @@
 ; Tree component and tree manipulation ;
 ;--------------------------------------;
 
-(defn create-new-node! []
+(defn create-new-node []
   (let [children-coords    (sort #(compare (get %1 0) (get %2 0))
                                  (db/get-selected-node-coords))
         leftmost-coord     (first children-coords)
@@ -68,16 +68,16 @@
             (db/add-node new-node))
         (js/alert "Only adjacent nodes can be merged."))))
 
-(defn combine-nodes! []
+(defn combine-nodes []
   "Combines the selected nodes, if possible."
   (let [coords (db/get-node-coords-under-renaming)]
     (if (and (empty? coords) (some? (db/get-selected-node-coords)))
-      (create-new-node!)
+      (create-new-node)
       (let [coord (first coords)]
         (do (db/set-node-label coord (db/get-rename-label))
             (db/set-node-state coord :selected))))))
 
-(defn start-rename-node! []
+(defn start-rename-node []
   (let [coords (db/get-selected-node-coords)]
     (if (and (= 1 (count coords)) (empty? (db/get-node-coords-under-renaming)))
         (let [coord (first coords)]
@@ -85,7 +85,7 @@
               (db/set-rename-label (db/get-node-label coord))))
         (js/alert "Exactly one node must be selected for renaming."))))
 
-(defn deselect-all-nodes! []
+(defn deselect-all-nodes []
   (doall
     (for [coord (db/get-node-coords)]
       (db/set-node-state coord :not-selected))))
@@ -96,10 +96,10 @@
 and some buttons for interaction."
   [:div
    [:div
-    [:button {:on-click combine-nodes!} "Combine"]
-    [:button {:on-click start-rename-node!} "Edit Label"]
+    [:button {:on-click combine-nodes} "Combine"]
+    [:button {:on-click start-rename-node} "Edit Label"]
     [:button {:on-click db/del-selected-nodes} "Delete"]
-    [:button {:on-click deselect-all-nodes!} "Deselect All"]]
+    [:button {:on-click deselect-all-nodes} "Deselect All"]]
    [:br]
    (into
     [:div {:style {:position "relative"}}]
@@ -300,9 +300,9 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 (set! (.-onkeydown js/document)
       (fn [event]
         (case (.-code event)
-          "Enter" (combine-nodes!)
-          "Escape" (deselect-all-nodes!)
+          "Enter" (combine-nodes)
+          "Escape" (deselect-all-nodes)
         (when (.-ctrlKey event)
           (case (.-code event)
-            "KeyR" (when (.-ctrlKey event) (start-rename-node!))
+            "KeyR" (when (.-ctrlKey event) (start-rename-node))
             "KeyD" (db/del-selected-nodes))))))
