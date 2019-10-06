@@ -304,5 +304,5 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
           "Escape" (deselect-all-nodes)
         (when (.-ctrlKey event)
           (case (.-code event)
-            "KeyR" (when (.-ctrlKey event) (start-rename-node))
+            "KeyR" (start-rename-node)
             "KeyD" (db/del-selected-nodes))))))
