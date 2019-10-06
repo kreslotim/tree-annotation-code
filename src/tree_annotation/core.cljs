@@ -43,10 +43,65 @@
             {:style style :on-click #(db/toggle-select coord)} 
             (db/get-node-label coord)]))))
 
+;--------------------------------------;
+; Tree component and tree manipulation ;
+;--------------------------------------;
+
+(defn create-new-node! []
+  (let [children-coords    (sort #(compare (get %1 0) (get %2 0))
+                                 (db/get-selected-node-coords))
+        leftmost-coord     (first children-coords)
+        rightmost-coord    (last  children-coords)
+        new-node
+          {:x              (leftmost-coord 0)
+          :y               (inc (reduce max (map #(get % 1) children-coords)))
+          :length          (reduce + (map db/get-node-length children-coords))
+          :label           (db/get-node-label rightmost-coord)
+          :children-coords children-coords
+          :state           :selected}
+        children-adjacent? (= (:length new-node)
+                              (- (+ (db/get-node-length rightmost-coord)
+                                    (rightmost-coord 0))
+                                 (:x new-node)))]
+    (if children-adjacent?
+        (do (doall (map db/toggle-select children-coords))
+            (db/add-node new-node))
+        (js/alert "Only adjacent nodes can be merged."))))
+
+(defn combine-nodes! []
+  "Combines the selected nodes, if possible."
+  (let [coords (db/get-node-coords-under-renaming)]
+    (if (and (empty? coords) (some? (db/get-selected-node-coords)))
+      (create-new-node!)
+      (let [coord (first coords)]
+        (do (db/set-node-label coord (db/get-rename-label))
+            (db/set-node-state coord :selected))))))
+
+(defn start-rename-node! []
+  (let [coords (db/get-selected-node-coords)]
+    (if (and (= 1 (count coords)) (empty? (db/get-node-coords-under-renaming)))
+        (let [coord (first coords)]
+          (do (db/set-node-state coord :rename)
+              (db/set-rename-label (db/get-node-label coord))))
+        (js/alert "Exactly one node must be selected for renaming."))))
+
+(defn deselect-all-nodes! []
+  (doall
+    (for [coord (db/get-node-coords)]
+      (db/set-node-state coord :not-selected))))
+
+
 (defn tree-annotation-component []
-  (into
+  "Creates a set of components corresponding to the nodes in the database
+and some buttons for interaction."
+  [:div
+   [:button {:on-click combine-nodes!} "Combine"]
+   [:button {:on-click start-rename-node!} "Edit Label"]
+   [:button {:on-click db/del-selected-nodes} "Delete"]
+   [:button {:on-click deselect-all-nodes!} "Deselect All"]
+   (into
     [:div {:style {:position "relative"}}]
-    (map node-component (db/get-node-coords))))
+    (map node-component (db/get-node-coords)))])
 
 ;-----------------;
 ; Input component ;
@@ -239,52 +294,12 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 ; Onkeypress events ;
 ;-------------------;
 
-(defn create-new-node []
-  (let [children-coords    (sort #(compare (get %1 0) (get %2 0)) 
-                                 (db/get-selected-node-coords))
-        leftmost-coord     (first children-coords)
-        rightmost-coord    (last  children-coords)
-        new-node           
-          {:x              (leftmost-coord 0)
-          :y               (inc (reduce max (map #(get % 1) children-coords)))
-          :length          (reduce + (map db/get-node-length children-coords))
-          :label           (db/get-node-label rightmost-coord)
-          :children-coords children-coords
-          :state           :selected}
-        children-adjacent? (= (:length new-node)
-                              (- (+ (db/get-node-length rightmost-coord)
-                                    (rightmost-coord 0))
-                                 (:x new-node)))]
-    (if children-adjacent?
-        (do (doall (map db/toggle-select children-coords))
-            (db/add-node new-node))
-        (js/alert "Only adjacent nodes can be merged."))))
-
-(defn start-rename-node []
-  (let [coords (db/get-selected-node-coords)]
-    (if (and (= 1 (count coords)) (empty? (db/get-node-coords-under-renaming)))
-        (let [coord (first coords)]
-          (do (db/set-node-state coord :rename)
-              (db/set-rename-label (db/get-node-label coord))))
-        (js/alert "Exactly one node must be selected for renaming."))))
-
-(defn deselect-all-nodes []
-  (doall 
-    (for [coord (db/get-node-coords)]
-      (db/set-node-state coord :not-selected))))
-
 (set! (.-onkeydown js/document)
       (fn [event]
         (case (.-code event)
-          "Enter" 
-            (let [coords (db/get-node-coords-under-renaming)]
-              (if (and (empty? coords) (some? (db/get-selected-node-coords)))
-                  (create-new-node)
-                  (let [coord (first coords)]
-                    (do (db/set-node-label coord (db/get-rename-label))
-                        (db/set-node-state coord :selected)))))
-          "Escape" (deselect-all-nodes)
+          "Enter" (combine-nodes!)
+          "Escape" (deselect-all-nodes!)
         (when (.-ctrlKey event)
           (case (.-code event)
-            "KeyR" (when (.-ctrlKey event) (start-rename-node))
+            "KeyR" (when (.-ctrlKey event) (start-rename-node!))
             "KeyD" (db/del-selected-nodes))))))
