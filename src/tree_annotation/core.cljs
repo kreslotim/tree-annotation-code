@@ -95,10 +95,12 @@
   "Creates a set of components corresponding to the nodes in the database
 and some buttons for interaction."
   [:div
-   [:button {:on-click combine-nodes!} "Combine"]
-   [:button {:on-click start-rename-node!} "Edit Label"]
-   [:button {:on-click db/del-selected-nodes} "Delete"]
-   [:button {:on-click deselect-all-nodes!} "Deselect All"]
+   [:div
+    [:button {:on-click combine-nodes!} "Combine"]
+    [:button {:on-click start-rename-node!} "Edit Label"]
+    [:button {:on-click db/del-selected-nodes} "Delete"]
+    [:button {:on-click deselect-all-nodes!} "Deselect All"]]
+   [:br]
    (into
     [:div {:style {:position "relative"}}]
     (map node-component (db/get-node-coords)))])
@@ -282,8 +284,9 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
     [:br]
     [:div [output-component] ]
     [:br]
-    [:div {:style {:height 20}}]
-    [tree-annotation-component]])
+    [:div {:style {:height 10}}]
+    [:div [tree-annotation-component] ]
+    ])
 
 (defn render []
   (r/render [app-component] (.-body js/document)))
