@@ -78,9 +78,9 @@
 ;---------------------;
 
 (defparser tree-parser "
-  node = (label | <'[.'> label children <']'>) <' '?>
+  node     = (label | <'[.'> label children <']'>) <' '?>
   children = node+
-  label = <'$'> #'[^$\\[\\]. ]+' <'$ '>
+  label    = <'$'> #'[^$\\[\\]. ]+' <'$ '>
   ")
 
 (defn parse-tree->nodes [tree]
