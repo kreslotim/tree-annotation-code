@@ -124,7 +124,7 @@ and some buttons for interaction."
 (defn sequence-input-component []
   [:div
     {:style {:position "relative"}}
-    [:button {:on-click #(load-input-sequence)} "load sequence"]
+    [:button {:on-click #(load-input-sequence)} "Load Sequence"]
     [:textarea {:value (db/get-input-str)
                 :size (+ (count (db/get-input-str)) 2) 
                 :style {:position "absolute" :left 120 :width 520}
@@ -173,7 +173,7 @@ and some buttons for interaction."
 (defn tree-input-component []
   [:div
     {:style {:position "relative"}}
-    [:button {:on-click #(load-tree-string)} "load qtree string"]
+    [:button {:on-click #(load-tree-string)} "Load QTree String"]
     [:textarea {:value (db/get-input-tree-str)
                 :size (+ (count (db/get-input-tree-str)) 2) 
                 :style {:position "absolute" :left 120 :width 520}
@@ -214,7 +214,7 @@ and some buttons for interaction."
     {:style {:position "relative"}}
     [:button 
       {:on-click #(compute-&-set-output-string)} 
-      "create tree string"]
+      "Create Tree String"]
     [:textarea {:value (db/get-output-str)
                 :style {:position "absolute" :left 120 :width 520}
                 :readonly "readonly"}]])
@@ -266,7 +266,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 
 (defn toggle-manual-component []
   [:button {:on-click #(db/toggle-manual)} 
-           "toggle manual"])
+           "Toggle Manual"])
 
 ;---------------;
 ; App component ;
