@@ -109,6 +109,19 @@ and some buttons for interaction."
     [:div {:style {:position "relative"}}]
     (map node-component (db/get-node-coords)))])
 
+(defn set-onkeydown-events! []
+  (set! (.-onkeydown js/document)
+        (fn [event]
+          (case (.-code event)
+            "Enter"  (combine-nodes)
+            "Escape" (deselect-all-nodes)
+            "KeyR"   (start-rename-node)
+            "KeyD"   (db/del-selected-nodes)))))
+
+(defn unset-onkeydown-events! []
+  (set! (.-onkeydown js/document)
+        (fn [event] nil)))
+
 ;-----------------;
 ; Input component ;
 ;-----------------;
@@ -132,7 +145,10 @@ and some buttons for interaction."
     [:textarea {:value (db/get-input-str)
                 :size (+ (count (db/get-input-str)) 2) 
                 :style {:position "absolute" :left 120 :width 520}
-                :on-change #(db/set-input-str (-> % .-target .-value))}]])
+                :on-change #(db/set-input-str (-> % .-target .-value))
+                :on-focus #(unset-onkeydown-events!)
+                :on-blur #(set-onkeydown-events!)
+    }]])
 
 ;---------------------;
 ; Load tree component ;
@@ -181,7 +197,10 @@ and some buttons for interaction."
     [:textarea {:value (db/get-input-tree-str)
                 :size (+ (count (db/get-input-tree-str)) 2) 
                 :style {:position "absolute" :left 120 :width 520}
-                :on-change #(db/set-input-tree-str (-> % .-target .-value))}]])
+                :on-change #(db/set-input-tree-str (-> % .-target .-value))
+                :on-focus #(unset-onkeydown-events!)
+                :on-blur #(set-onkeydown-events!)
+                }]])
 
 ;------------------;
 ; Output component ;
@@ -253,9 +272,9 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 
 ##  Additional Functionality
 
-- `Ctrl` + `R` opens a text field to rename a selected node. 
+- `R` opens a text field to rename a selected node. 
   Submit the new name by pressing `Enter`.
-- `Ctrl` + `D` deletes all selected nodes and their ancestors.
+- `D` deletes all selected nodes and their ancestors.
   Only inner nodes or the last leaf node can be deleted.
 - `Esc` deselects all nodes.
 - You can also edit an existing qtree string by loading it 
@@ -296,17 +315,4 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
   (r/render [app-component] (.-body js/document)))
 
 (render)
-
-;-------------------;
-; Onkeypress events ;
-;-------------------;
-
-(set! (.-onkeydown js/document)
-      (fn [event]
-        (case (.-code event)
-          "Enter" (combine-nodes)
-          "Escape" (deselect-all-nodes)
-        (when (.-ctrlKey event)
-          (case (.-code event)
-            "KeyR" (start-rename-node)
-            "KeyD" (db/del-selected-nodes))))))
+(set-onkeydown-events!)
