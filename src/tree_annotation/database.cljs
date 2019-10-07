@@ -152,9 +152,9 @@
 (defn del-ancestors [coord]
   (let [parent-coord (get-parent-coord coord)]
     (when (some? parent-coord)
-      (do (del-ancestors parent-coord)
-          (del-node parent-coord)
-          (del-parent-coord coord)))))
+      (del-ancestors parent-coord)
+      (del-node parent-coord)
+      (del-parent-coord coord))))
 
 ;------------------------------;
 ; Node add and delete requests ;
@@ -165,19 +165,28 @@
                     :label label
                     :children-coords children-coords
                     :state state}]
-    (do (swap! db assoc-in [:nodes [x y]] properties)
-        (doall (map #(set-parent-coord % [x y]) children-coords)))))
+    (swap! db assoc-in [:nodes [x y]] properties)
+    (doall (map #(set-parent-coord % [x y]) children-coords))))
 
 (defn del-all-nodes []
   (swap! db assoc :nodes {}))
 
 (defn del-node [coord]
   (when (last-leaf-or-inner-node? coord)
-    (do (del-ancestors coord)
-        (swap! db 
+    ; delete all ancestors of the node (parent, grand-parent, ...)
+    (del-ancestors coord)
+    ; delete node coord as the parent of its children
+    (doall 
+      (for [child-coord (get-children-coords coord)]
+        (swap! db
           (fn [db]
-            (assoc db :nodes 
-              (dissoc (:nodes db) coord)))))))
+            (assoc-in db [:nodes child-coord]
+              (dissoc (get-in db [:nodes child-coord]) :parent-coord))))))
+    ; delete the node itself
+    (swap! db 
+      (fn [db]
+        (assoc db :nodes 
+          (dissoc (:nodes db) coord))))))
 
 (defn del-selected-nodes []
   (doall (for [coord (get-selected-node-coords)]
