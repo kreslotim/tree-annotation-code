@@ -78,15 +78,15 @@
     (if (and (empty? coords) (some? (db/get-selected-node-coords)))
       (create-new-node)
       (let [coord (first coords)]
-        (do (db/set-node-label coord (db/get-rename-label))
-            (db/set-node-state coord :selected))))))
+        (db/set-node-label coord (db/get-rename-label))
+        (db/set-node-state coord :selected)))))
 
 (defn start-rename-node []
   (let [coords (db/get-selected-node-coords)]
     (if (and (= 1 (count coords)) (empty? (db/get-node-coords-under-renaming)))
         (let [coord (first coords)]
-          (do (db/set-node-state coord :rename)
-              (db/set-rename-label (db/get-node-label coord))))
+          (db/set-node-state coord :rename)
+          (db/set-rename-label (db/get-node-label coord)))
         (js/alert "Exactly one node must be selected for renaming."))))
 
 (defn deselect-all-nodes []
@@ -120,10 +120,10 @@ and some buttons for interaction."
   "Create leaf nodes from an input string which is split on spaces."
   (let [labels (str/split (db/get-input-str) #" ")
         indices (range 0 (count labels))]
-    (do (db/del-all-nodes))
-        (doall (->> (map vector indices labels)
-                    (map (partial apply leaf))
-                    (map db/add-node)))))
+    (db/del-all-nodes)
+    (doall (->> (map vector indices labels)
+                (map (partial apply leaf))
+                (map db/add-node)))))
 
 (defn sequence-input-component []
   [:div
