@@ -26,6 +26,8 @@
      :border-color "#555"
      :text-align   "center"}))
 
+(declare unset-onkeydown-character-events! set-onkeydown-events!)
+
 (defn node-component [coord]
   "Create a component (a button or text field) from a node."
   (let [state (db/get-node-state coord)]
@@ -34,7 +36,9 @@
                    :type "text" 
                    :value (db/get-rename-label)
                    :style (assoc (button-style coord) :z-index 1)
-                   :on-change #(db/set-rename-label (-> % .-target .-value))}]
+                   :on-change #(db/set-rename-label (-> % .-target .-value))
+                   :on-focus #(unset-onkeydown-character-events!)
+                   }]
         (let [style (assoc (button-style coord)
                            :background-color 
                            (case state :selected     "#8E0" 
@@ -78,6 +82,7 @@
     (if (and (empty? coords) (some? (db/get-selected-node-coords)))
       (create-new-node)
       (let [coord (first coords)]
+        (set-onkeydown-events!)
         (db/set-node-label coord (db/get-rename-label))
         (db/set-node-state coord :selected)))))
 
@@ -109,6 +114,23 @@ and some buttons for interaction."
     [:div {:style {:position "relative"}}]
     (map node-component (db/get-node-coords)))])
 
+(defn set-onkeydown-events! []
+  (set! (.-onkeydown js/document)
+        (fn [event]
+          (case (.-code event)
+            "Enter"  (combine-nodes)
+            "Escape" (deselect-all-nodes)
+            "KeyR"   (start-rename-node)
+            "KeyD"   (db/del-selected-nodes)))))
+
+(defn unset-onkeydown-character-events! []
+  (set! (.-onkeydown js/document)
+        (fn [event] 
+          (case (.-code event)
+            "Enter"  (combine-nodes)
+            "Escape" (deselect-all-nodes)
+        ))))
+
 ;-----------------;
 ; Input component ;
 ;-----------------;
@@ -132,7 +154,10 @@ and some buttons for interaction."
     [:textarea {:value (db/get-input-str)
                 :size (+ (count (db/get-input-str)) 2) 
                 :style {:position "absolute" :left 120 :width 520}
-                :on-change #(db/set-input-str (-> % .-target .-value))}]])
+                :on-change #(db/set-input-str (-> % .-target .-value))
+                :on-focus #(unset-onkeydown-character-events!)
+                :on-blur #(set-onkeydown-events!)
+    }]])
 
 ;---------------------;
 ; Load tree component ;
@@ -153,8 +178,8 @@ and some buttons for interaction."
           (fn tree->node [[_ [_ label] [_ & children]]]
             (if children
                 (let [child-nodes (map tree->node children)
-                      node {:x               (-> child-nodes first :x)
-                            :y               (-> child-nodes first :y inc)
+                      node {:x               (->> child-nodes first :x)
+                            :y               (->> child-nodes (map :y) (reduce max) inc)
                             :length          (transduce (map :length) + child-nodes)
                             :label           label
                             :children-coords (map #(vector (:x %) (:y %)) child-nodes)
@@ -181,7 +206,10 @@ and some buttons for interaction."
     [:textarea {:value (db/get-input-tree-str)
                 :size (+ (count (db/get-input-tree-str)) 2) 
                 :style {:position "absolute" :left 120 :width 520}
-                :on-change #(db/set-input-tree-str (-> % .-target .-value))}]])
+                :on-change #(db/set-input-tree-str (-> % .-target .-value))
+                :on-focus #(unset-onkeydown-character-events!)
+                :on-blur #(set-onkeydown-events!)
+                }]])
 
 ;------------------;
 ; Output component ;
@@ -231,7 +259,8 @@ and some buttons for interaction."
 
 # Tree Annotation Tool
 
-by [Daniel Harasim](https://dcml.epfl.ch/lab/harasim/) 
+by [Daniel Harasim](https://dcml.epfl.ch/lab/harasim/),
+[Christoph Finkensiep](https://dcml.epfl.ch/lab/finkensiep/),
 and the [Digital and Cognitive Musicology Lab (DCML)](https://dcml.epfl.ch)
 
 This is an open source project. Find the code [here](https://github.com/DCMLab/tree-annotation-code).
@@ -253,9 +282,9 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 
 ##  Additional Functionality
 
-- `Ctrl` + `R` opens a text field to rename a selected node. 
+- `R` opens a text field to rename a selected node. 
   Submit the new name by pressing `Enter`.
-- `Ctrl` + `D` deletes all selected nodes and their ancestors.
+- `D` deletes all selected nodes and their ancestors.
   Only inner nodes or the last leaf node can be deleted.
 - `Esc` deselects all nodes.
 - You can also edit an existing qtree string by loading it 
@@ -296,17 +325,4 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
   (r/render [app-component] (.-body js/document)))
 
 (render)
-
-;-------------------;
-; Onkeypress events ;
-;-------------------;
-
-(set! (.-onkeydown js/document)
-      (fn [event]
-        (case (.-code event)
-          "Enter" (combine-nodes)
-          "Escape" (deselect-all-nodes)
-        (when (.-ctrlKey event)
-          (case (.-code event)
-            "KeyR" (start-rename-node)
-            "KeyD" (db/del-selected-nodes))))))
+(set-onkeydown-events!)
