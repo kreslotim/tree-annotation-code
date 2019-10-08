@@ -259,7 +259,8 @@ and some buttons for interaction."
 
 # Tree Annotation Tool
 
-by [Daniel Harasim](https://dcml.epfl.ch/lab/harasim/) 
+by [Daniel Harasim](https://dcml.epfl.ch/lab/harasim/),
+[Christoph Finkensiep](https://dcml.epfl.ch/lab/finkensiep/),
 and the [Digital and Cognitive Musicology Lab (DCML)](https://dcml.epfl.ch)
 
 This is an open source project. Find the code [here](https://github.com/DCMLab/tree-annotation-code).
