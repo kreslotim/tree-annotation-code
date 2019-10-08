@@ -26,6 +26,8 @@
      :border-color "#555"
      :text-align   "center"}))
 
+(declare unset-onkeydown-character-events! set-onkeydown-events!)
+
 (defn node-component [coord]
   "Create a component (a button or text field) from a node."
   (let [state (db/get-node-state coord)]
@@ -34,7 +36,9 @@
                    :type "text" 
                    :value (db/get-rename-label)
                    :style (assoc (button-style coord) :z-index 1)
-                   :on-change #(db/set-rename-label (-> % .-target .-value))}]
+                   :on-change #(db/set-rename-label (-> % .-target .-value))
+                   :on-focus #(unset-onkeydown-character-events!)
+                   }]
         (let [style (assoc (button-style coord)
                            :background-color 
                            (case state :selected     "#8E0" 
@@ -78,6 +82,7 @@
     (if (and (empty? coords) (some? (db/get-selected-node-coords)))
       (create-new-node)
       (let [coord (first coords)]
+        (set-onkeydown-events!)
         (db/set-node-label coord (db/get-rename-label))
         (db/set-node-state coord :selected)))))
 
@@ -118,9 +123,13 @@ and some buttons for interaction."
             "KeyR"   (start-rename-node)
             "KeyD"   (db/del-selected-nodes)))))
 
-(defn unset-onkeydown-events! []
+(defn unset-onkeydown-character-events! []
   (set! (.-onkeydown js/document)
-        (fn [event] nil)))
+        (fn [event] 
+          (case (.-code event)
+            "Enter"  (combine-nodes)
+            "Escape" (deselect-all-nodes)
+        ))))
 
 ;-----------------;
 ; Input component ;
@@ -146,7 +155,7 @@ and some buttons for interaction."
                 :size (+ (count (db/get-input-str)) 2) 
                 :style {:position "absolute" :left 120 :width 520}
                 :on-change #(db/set-input-str (-> % .-target .-value))
-                :on-focus #(unset-onkeydown-events!)
+                :on-focus #(unset-onkeydown-character-events!)
                 :on-blur #(set-onkeydown-events!)
     }]])
 
@@ -198,7 +207,7 @@ and some buttons for interaction."
                 :size (+ (count (db/get-input-tree-str)) 2) 
                 :style {:position "absolute" :left 120 :width 520}
                 :on-change #(db/set-input-tree-str (-> % .-target .-value))
-                :on-focus #(unset-onkeydown-events!)
+                :on-focus #(unset-onkeydown-character-events!)
                 :on-blur #(set-onkeydown-events!)
                 }]])
 
