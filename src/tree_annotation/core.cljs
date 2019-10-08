@@ -178,8 +178,8 @@ and some buttons for interaction."
           (fn tree->node [[_ [_ label] [_ & children]]]
             (if children
                 (let [child-nodes (map tree->node children)
-                      node {:x               (-> child-nodes first :x)
-                            :y               (-> child-nodes first :y inc)
+                      node {:x               (->> child-nodes first :x)
+                            :y               (->> child-nodes (map :y) (reduce max) inc)
                             :length          (transduce (map :length) + child-nodes)
                             :label           label
                             :children-coords (map #(vector (:x %) (:y %)) child-nodes)
