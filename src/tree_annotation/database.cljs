@@ -15,6 +15,7 @@
    :strip-math     true
    :forest         []
    :show-manual    true
+   :show-io        true
   }))
 
 ;-----------------------;
@@ -345,12 +346,18 @@ If `strip-math` is `true`, math labels will not have $s."
                 (js/console.log "parse: " (str parse))
                 (assoc db :forest (first (recalc-coords forest' 0)))))))
 
-;-----------------;
-; Manual requests ;
-;-----------------;
+;---------------------;
+; visibility requests ;
+;---------------------;
 
 (defn show-manual? []
   (@db :show-manual))
 
-(defn toggle-manual []
+(defn toggle-manual! []
   (swap! db update :show-manual not))
+
+(defn show-io? []
+  (@db :show-io))
+
+(defn toggle-io! []
+  (swap! db update :show-io not))

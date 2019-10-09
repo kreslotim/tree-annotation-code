@@ -4,9 +4,26 @@
 /*     width: 100%; */
 /* } */
 
+/* fonts */
+html, button, input, select, textarea,
+.pure-g [class *= "pure-u"] {
+    font-family: "Helvetica Neue", sans-serif;
+}
+
+.content {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 768px;
+}
+
+.manual {
+    border: solid;
+    padding: 2em;
+}
+
 .button-delete {
     color: white;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    /* text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); */
     background: rgb(202,60,60);
 }
 

@@ -91,7 +91,8 @@ and some buttons for interaction."
 (defn load-input-sequence []
   "Create leaf nodes from an input string which is split on spaces."
   (let [labels (str/split (db/get-input-str) #" ")]
-    (db/set-leaves! labels)))
+    (db/set-leaves! labels)
+    (db/toggle-io!)))
 
 (defn sequence-input-component []
   [:div
@@ -128,8 +129,9 @@ and some buttons for interaction."
      "strip math"
      ]
     [:div {:class "pure-u-1-2"}]
-    [:button {:class "pure-button pure-u-1-4"
-              :on-click db/load-tree-string!}
+    [:button {:class "pure-button pure-button-primary pure-u-1-4"
+              :on-click #(do (db/load-tree-string!)
+                             (db/toggle-io!))}
      "Load QTree String"]]])
 
 ;------------------;
@@ -170,6 +172,21 @@ and some buttons for interaction."
       [:button
        {:class "pure-button pure-u-1-4" :on-click #(copy-to-clipboard out-str)}
        "Copy to Clipboard"]]]))
+
+;--------------;
+; IO component ;
+;--------------;
+
+(defn io-component []
+  [:div
+   (when (db/show-io?)
+     [:div
+      [sequence-input-component]
+      [tree-input-component]
+      [output-component]])
+   [:a {:on-click db/toggle-io! :href "javascript:void(0)"}
+    (if (db/show-io?) "Hide IO Section" "Show IO Section")]])
+
 
 ;------------------;
 ; Manual component ;
@@ -219,9 +236,9 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 (defn manual-component []
   [:div
    (when (db/show-manual?)
-     [:div {:style {:border-style "solid" :padding 20}}
+     [:div {:class "manual"}
       (md/md->hiccup manual-string)])
-   [:a {:on-click db/toggle-manual :href "#"}
+   [:a {:on-click db/toggle-manual! :href "javascript:void(0)"}
     (if (db/show-manual?) "Hide Manual" "Show Manual")]]
   )
 
@@ -230,12 +247,11 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 ;---------------;
 
 (defn app-component []
-  [:div {:style {:font-family "Helvetica Neue,sans"}}
-   [:h1 "Tree Annotation"]
-   [manual-component]
-   [sequence-input-component]
-   [tree-input-component]
-   [output-component]
+  [:div
+   [:div {:class "content"}
+    [:h1 "Tree Annotation"]
+    [manual-component]
+    [io-component]]
    [tree-annotation-component]])
 
 (defn render []
