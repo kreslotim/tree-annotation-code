@@ -3,15 +3,17 @@
 ;-------------------------;
 
 (ns tree-annotation.database
-  (:require [reagent.core :as r]))
+  (:require [reagent.core :as r]
+            [instaparse.core :as insta :refer-macros [defparser]]))
 
 ; private annotation does currently not work in clojure script
 (defonce ^:private db (r/atom 
   {:input-str      "Dm G7 C"
    :input-tree-str "[.$C$ [.$G7$ $Dm$ $G7$ ] $C$ ] "
-   :output-str     ""
-   :rename-label   ""
-   :nodes          {}
+   :math-inner     true
+   :math-leaves    true
+   :strip-math     false
+   :forest         []
    :show-manual    true
   }))
 
@@ -25,9 +27,9 @@
 (defn set-input-str [input-str]
   (swap! db assoc :input-str input-str))
 
-;-----------------------;
-; Input string requests ;
-;-----------------------;
+;----------------------------;
+; Input tree string requests ;
+;----------------------------;
 
 (defn get-input-tree-str []
   (:input-tree-str @db))
@@ -35,162 +37,301 @@
 (defn set-input-tree-str [input-tree-str]
   (swap! db assoc :input-tree-str input-tree-str))
 
+(defn strip-math? []
+  (:strip-math @db))
+
+(defn toggle-strip-math! []
+  (swap! db update :strip-math not))
+
 ;------------------------;
 ; Output string requests ;
 ;------------------------;
 
-(defn get-output-str []
-  (:output-str @db))
+(declare leaf?)
 
-(defn set-output-str [output-str]
-  (swap! db assoc :output-str output-str))
+(defn tree-str [math-inner math-leaves node]
+  (let [children (:children node)
+        label    (:label node)
+        math     (or (and (leaf? node) math-leaves)
+                     (and (not (leaf? node)) math-inner))
+        wrap     (fn [s] (if math (str "$" s "$") s))]
+    (if (empty? children) ; if the node is a leaf
+      (str (wrap label) " ")
+      (apply str
+             (concat ["[." (wrap label) " "]
+                     (map (partial tree-str math-inner math-leaves) children)
+                     ["] "])))))
+
+(defn get-output-str []
+  (let [math-inner (:math-inner @db)
+        math-leaves (:math-leaves @db)]
+    (apply str (map (partial tree-str math-inner math-leaves)
+                    (:forest @db)))))
+
+(defn math-inner? []
+  (:math-inner @db))
+
+(defn math-leaves? []
+  (:math-leaves @db))
+
+(defn toggle-math-inner! []
+  (swap! db update :math-inner not))
+
+(defn toggle-math-leaves! []
+  (swap! db update :math-leaves not))
 
 ;-----------------------;
 ; Rename label requests ;
 ;-----------------------;
 
-(defn get-rename-label []
-  (:rename-label @db))
+;; (defn get-rename-label []
+;;   (:rename-label @db))
 
-(defn set-rename-label [label]
-  (swap! db assoc :rename-label label))
+;; (defn set-rename-label [label]
+;;   (swap! db assoc :rename-label label))
 
-(defn get-node-coords-under-renaming []
-  (->> (:nodes @db)
-       (filter (fn [[coord {state :state}]] (= :rename state)))
-       (map key)))
+;-----------------;
+; Forest requests ;
+;-----------------;
 
-;---------------------;
-; Node state requests ;
-;---------------------;
+;; basic node functions
+;; --------------------
 
-(defn get-node-state [coord] 
-  (get-in @db [:nodes coord :state]))
+(defn leaf? [node]
+  (empty? (:children node)))
 
-(defn set-node-state [coord new-state]
-  (swap! db assoc-in [:nodes coord :state] new-state))
+(defn tree-selected? [node]
+  (if (:selected node)
+    true
+    (some tree-selected? (:children node))))
 
-(defn toggle-select [coord]
-  "Select a node if it is not selected or 
-   unselect it if it is selected."
-  (let [new-state (case (get-node-state coord)
-                     :selected :not-selected
-                     :not-selected :selected)]
-    (set-node-state coord new-state)))
+(defn update-node [node f index]
+  (if (empty? index)
+    (f node)
+    (let [children (update (:children node) (first index) update-node f (rest index))]
+      (assoc node :children children))))
 
-;---------------------;
-; Node label requests ;
-;---------------------;
+(defn update-forest [forest f index]
+  (if (empty? index)
+    forest
+    (update forest (first index) update-node f (rest index))))
 
-(defn get-node-label [coord] 
-  (get-in @db [:nodes coord :label]))
+(defn map-tree [f tree]
+  (let [children' (mapv (partial map-tree f) (:children tree))
+        tree' (assoc tree :children children')]
+    (f tree)))
 
-(defn set-node-label [coord new-label]
-  (swap! db assoc-in [:nodes coord :label] new-label))
+(defn map-forest [f forest]
+  (mapv (partial map-tree f) forest))
 
-;----------------------;
-; Node length requests ;
-;----------------------;
 
-(defn get-node-length [coord]
-  (get-in @db [:nodes coord :length]))
+(def default-node
+  {:selected false
+   :renaming false
+   :label "empty"
+   :children []
+   :x 0 :y 0 :width 0})
 
-;--------------------------;
-; Node coordinate requests ;
-;--------------------------;
+;; forest requests
+;; ---------------
 
-; IMPORTANT: Coordinates are not represented as maps,
-; but as vectors [x y] where x and y are integers.
+(defn get-forest []
+  (:forest @db))
 
-(defn get-node-coords []
-  (map key (:nodes @db)))
+(defn delete-all! []
+  (swap! db assoc :forest []))
 
-(defn get-selected-node-coords []
-  (->> (:nodes @db)
-       (filter (fn [[coord {state :state}]] (= :selected state)))
-       (map key)))
+;; set leaves
 
-;------------------------;
-; Node children requests ;
-;------------------------;
+(defn make-leaf [label i]
+  (assoc default-node
+         :label label
+         :x i :y 0
+         :width 1))
 
-(defn get-children-coords [coord]
-  (get-in @db [:nodes coord :children-coords]))
+(defn set-leaves! [leaves]
+  (swap! db assoc :forest (mapv make-leaf leaves (range (count leaves)))))
 
-(defn leaf? [coord]
-  (empty? (get-children-coords coord)))
+;; selection
+;; ---------
 
-(defn last-leaf? [coord]
-  (and (leaf? coord)
-       (= (first coord)
-          (->> (get-node-coords)
-               (map first)
-               (apply max)))))
+;; toggle
 
-(defn last-leaf-or-inner-node? [coord]
-  (or (last-leaf? coord)
-      (not (leaf? coord))))
+(defn toggle-select [node]
+  (update node :selected not))
 
-;----------------------;
-; Node parent requests ;
-;----------------------;
+(defn toggle-select! [index]
+  (swap! db update :forest update-forest toggle-select index))
 
-(defn get-parent-coord [coord]
-  (get-in @db [:nodes coord :parent-coord]))
+;; deselect
 
-(defn set-parent-coord [coord parent-coord]
-  (swap! db assoc-in [:nodes coord :parent-coord] parent-coord))
+(defn deselect-tree [node]
+  (assoc node
+         :selected false
+         :children (mapv deselect-tree (:children node))))
 
-(defn del-parent-coord [coord]
-  (swap! db
-    (fn [db]
-      (assoc-in db [:nodes coord]
-        (dissoc (get-in db [:nodes coord]) :parent-coord)))))
+(defn deselect-all [forest]
+  (mapv deselect-tree forest))
 
-(declare del-node)
+(defn deselect-all! []
+  (swap! db update :forest deselect-all))
 
-(defn del-ancestors [coord]
-  (let [parent-coord (get-parent-coord coord)]
-    (when (some? parent-coord)
-      (del-ancestors parent-coord)
-      (del-node parent-coord)
-      (del-parent-coord coord))))
+;; rename
+;; ------
 
-;------------------------------;
-; Node add and delete requests ;
-;------------------------------;
+;; (defn rename-selected-nodes [node label]
+;;   (assoc node
+;;          :children (mapv rename-selected-nodes (:children node))
+;;          :label (if (:selected node)
+;;                   label
+;;                   (:label node))))
 
-(defn add-node [{:keys [x y length label children-coords state]}]
-  (let [properties {:length length
-                    :label label
-                    :children-coords children-coords
-                    :state state}]
-    (swap! db assoc-in [:nodes [x y]] properties)
-    (doall (map #(set-parent-coord % [x y]) children-coords))))
+;; (defn rename-selected [forest label]
+;;   (mapv (fn [node] (rename-selected-nodes node label)) forest))
 
-(defn del-all-nodes []
-  (swap! db assoc :nodes {}))
+;; (defn rename-selected! [label]
+;;   (swap! db update :forest #(rename-selected % label)))
 
-(defn del-node [coord]
-  (when (last-leaf-or-inner-node? coord)
-    ; delete all ancestors of the node (parent, grand-parent, ...)
-    (del-ancestors coord)
-    ; delete node coord as the parent of its children
-    (doall 
-      (for [child-coord (get-children-coords coord)]
-        (swap! db
-          (fn [db]
-            (assoc-in db [:nodes child-coord]
-              (dissoc (get-in db [:nodes child-coord]) :parent-coord))))))
-    ; delete the node itself
-    (swap! db 
-      (fn [db]
-        (assoc db :nodes 
-          (dissoc (:nodes db) coord))))))
+(defn rename-node [node label]
+  (assoc node :label label))
 
-(defn del-selected-nodes []
-  (doall (for [coord (get-selected-node-coords)]
-           (del-node coord))))
+(defn rename-node! [label index]
+  (swap! db update :forest update-forest #(rename-node % label) index))
+
+(defn start-renaming-selected [forest]
+  (map-forest (fn [node]
+                (if (:selected node)
+                  (assoc node :renaming true :selected false)
+                  node))
+              forest))
+
+(defn start-renaming-selected! []
+  (swap! db update :forest start-renaming-selected))
+
+(defn start-renaming [node]
+  (assoc node :renaming true))
+
+(defn start-renaming-node! [index]
+  (swap! db update :forest update-forest start-renaming index))
+
+(defn stop-renaming [node]
+  (assoc node :renaming false))
+
+(defn stop-renaming-node! [index]
+  (swap! db update :forest update-forest stop-renaming index))
+
+;; combine
+;; -------
+
+(defn combine [children]
+  (let [label (:label (last children))]
+    (assoc default-node
+           :label label
+           :children (mapv deselect-tree children)
+           :x (:x (first children))
+           :y (inc (reduce max (map :y children)))
+           :width (reduce + (map :width children)))))
+
+(defn combine-selected
+  ([forest] (combine-selected forest [] []))
+  ([forest group acc]
+   (letfn [(combine-if [coll xs]
+             (if (empty? xs) coll (conj coll (combine xs))))]
+     (if (empty? forest)
+       ; end of forest
+       (combine-if acc group)
+       ; in forest
+       (let [tree (first forest)
+             tail (rest forest)]
+         (if (tree-selected? tree)
+           (combine-selected tail (conj group tree) acc)
+           (combine-selected tail [] (conj (combine-if acc group) tree))))))))
+
+(defn combine-selected! []
+  (swap! db update :forest combine-selected))
+
+;; delete
+;; ------
+
+(defn node-delete-selected [node]
+  "Deletes all selected children of `node`.
+Returns either the unchanged node or a list of remaining subtrees."
+  (let [subtrees (mapv node-delete-selected (:children node))]
+    (if (or (and (:selected node) (not (leaf? node)))
+            (not-every? map? subtrees))
+      (vec (flatten subtrees))
+      node)))
+
+(defn delete-selected [forest]
+  "Delete all selected nodes and their ancestors from the forest."
+  (vec (flatten (map node-delete-selected forest))))
+
+(defn delete-selected! []
+  (swap! db update :forest delete-selected))
+
+;; parse
+;; -----
+
+(declare recalc-coords)
+
+(defn recalc-coords-tree [node offset]
+  (let [[children' offset-children] (recalc-coords (:children node) offset)
+        offset' (if (leaf? node) (inc offset-children) offset-children)
+        node' (assoc node
+                     :children children'
+                     :x offset
+                     :y (inc (reduce max 0 (map :y children')))
+                     :width (- offset' offset))]
+    [node' offset']))
+
+(defn recalc-coords [forest offset]
+  (if (empty? forest)
+    [[] offset]
+    (let [tree (first forest)
+          tail (rest forest)
+          [tree' offset-children] (recalc-coords-tree tree offset)
+          [tail' offset-tail] (recalc-coords tail offset-children)]
+      [(into [tree'] tail') offset-tail])))
+
+(defparser qtree-parser "
+  forest   = node*
+  node     = (label | <'[.'> label children <']'>) <' '?>
+  children = node+
+  label    = (group | math | string) <' '?>
+  group    = <'{'> #'[^{}]*' (group #'[^{}]*')* <'}'>
+  math     = <'$'> #'[^$\\[\\]. ]+' <'$'>
+  string   = #'\\w+'
+")
+
+(defn parse-group [group]
+  (if (string? group)
+    group
+    (str "{" (apply str (map parse-group (rest group))) "}")))
+
+(defn parse-label [strip-math parse]
+  (let [content (second parse)]
+    (case (first content)
+      :string (second content)
+      :math (if strip-math
+              (second content)
+              (str "$" (second content) "$"))
+      :group (parse-group content)
+      "empty")))
+
+(defn tree-from-parse [strip-math parse]
+  (let [label (parse-label strip-math (nth parse 1 "empty"))
+        children (vec (rest (nth parse 2 [])))]
+    (assoc default-node
+           :label label
+           :children (mapv (partial tree-from-parse strip-math) children))))
+
+(defn load-tree-string! []
+  (swap! db (fn [db]
+              (let [parse (qtree-parser (:input-tree-str db))
+                    strip-math (:strip-math db)
+                    forest' (mapv (partial tree-from-parse strip-math) (vec (next parse)))]
+                (js/console.log "parse: " (str parse))
+                (assoc db :forest (first (recalc-coords forest' 0)))))))
 
 ;-----------------;
 ; Manual requests ;
