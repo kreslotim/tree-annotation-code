@@ -13,7 +13,7 @@
 (def button-width 60)
 (def button-height 20)
 
-(defn button-style [node]
+(defn node-style [node]
   {:position     "absolute"
    :left         (* (:x node) button-width)
    :top          (* (:y node) button-height)
@@ -36,12 +36,12 @@
     [:input {:auto-focus true
              :type "text"
              :value (:label node)
-             :style (assoc (button-style node) :z-index 1)
+             :style (assoc (node-style node) :z-index 1)
              :on-change #(db/rename-node! (-> % .-target .-value) index)
              :on-key-press (fn [ev]
                              (when (= (.-key ev) "Enter")
                                (db/stop-renaming-node! index)))}]
-    (let [style (assoc (button-style node)
+    (let [style (assoc (node-style node)
                        :background-color (selection-color node)
                        :cursor "pointer"
                        )]
@@ -71,10 +71,10 @@
 and some buttons for interaction."
   [:div
    [:h2 "Annotation"]
-   [:div
-    [:button {:on-click db/combine-selected!} "Combine"]
-    [:button {:on-click db/delete-selected!} "Delete"]
-    [:button {:on-click db/deselect-all!} "Deselect All"]]
+   [:div {:class "pure-button-group" :role "group"}
+    [:button {:class "pure-button" :on-click db/combine-selected!} "Combine"]
+    [:button {:class "pure-button" :on-click db/deselect-all!} "Deselect All"]
+    [:button {:class "pure-button button-delete" :on-click db/delete-selected!} "Delete"]]
    [:br]
    (into
     [:div {:style {:position "relative"}}]
@@ -96,12 +96,16 @@ and some buttons for interaction."
 (defn sequence-input-component []
   [:div
    [:h2 "Input (list of leaves)"]
-   [:textarea {:value (db/get-input-str)
-               :size (+ (count (db/get-input-str)) 2)
-               :style {:width 520}
-               :on-change #(db/set-input-str (-> % .-target .-value))}]
-   [:br]
-   [:button {:on-click load-input-sequence} "Load Sequence"]])
+   [:div {:class "pure-form pure-g"}
+    [:textarea {:class "pure-input-1"
+                :value (db/get-input-str)
+                :size (+ (count (db/get-input-str)) 2)
+                :style {:max-width "100%"}
+                :on-change #(db/set-input-str (-> % .-target .-value))}]
+    [:div {:class "pure-u-3-4"}]
+    [:button {:class "pure-button pure-button-primary pure-u-1-4"
+              :on-click load-input-sequence}
+     "Load Sequence"]]])
 
 ;---------------------;
 ; Load tree component ;
@@ -110,19 +114,23 @@ and some buttons for interaction."
 (defn tree-input-component []
   [:div
    [:h2 "Input (qtree string)"]
-   [:textarea {:value (db/get-input-tree-str)
-               :size (+ (count (db/get-input-tree-str)) 2)
-               :style {:width 520}
-               :on-change #(db/set-input-tree-str (-> % .-target .-value))}]
-   [:div
-    [:label
+   [:div {:class "pure-form pure-g"}
+    [:textarea {:class "pure-input-1"
+                :value (db/get-input-tree-str)
+                :size (+ (count (db/get-input-tree-str)) 2)
+                :style {:max-width "100%"}
+                :on-change #(db/set-input-tree-str (-> % .-target .-value))}]
+    [:label {:class "pure-u-1-4 pure-checkbox"}
      [:input
       {:type "checkbox"
        :checked (db/strip-math?)
        :on-change db/toggle-strip-math!}]
      "strip math"
      ]
-    [:button {:on-click db/load-tree-string!} "Load QTree String"]]])
+    [:div {:class "pure-u-1-2"}]
+    [:button {:class "pure-button pure-u-1-4"
+              :on-click db/load-tree-string!}
+     "Load QTree String"]]])
 
 ;------------------;
 ; Output component ;
@@ -141,24 +149,26 @@ and some buttons for interaction."
   (let [out-str (db/get-output-str)]
     [:div
      [:h2 "Output (qtree string)"]
-     [:textarea {:value out-str
-                 :style {:width 520}
-                 :readonly "readonly"}]
-     [:div
-      [:label
+     [:div {:class "pure-form pure-g"}
+      [:textarea {:value out-str
+                  :class "pure-input-1"
+                  :style {:max-width "100%"}
+                  :readonly "readonly"}]
+      [:label {:class "pure-u-1-4 pure-checkbox"}
        [:input
         {:type "checkbox"
          :checked (db/math-inner?)
          :on-change db/toggle-math-inner!}]
        "$ inner nodes"]
-      [:label
+      [:label {:class "pure-u-1-4 pure-checkbox"}
        [:input
         {:type "checkbox"
          :checked (db/math-leaves?)
          :on-change db/toggle-math-leaves!}]
-       "$ leaf nodes"]
+       "math leaf nodes"]
+      [:div {:class "pure-u-1-4"}]
       [:button
-       {:on-click #(copy-to-clipboard out-str)}
+       {:class "pure-button pure-u-1-4" :on-click #(copy-to-clipboard out-str)}
        "Copy to Clipboard"]]]))
 
 ;------------------;
@@ -209,9 +219,9 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 (defn manual-component []
   [:div
    (when (db/show-manual?)
-     [:div {:style {:max-width 600 :border-style "solid" :padding 20}}
+     [:div {:style {:border-style "solid" :padding 20}}
       (md/md->hiccup manual-string)])
-   [:button {:on-click db/toggle-manual}
+   [:a {:on-click db/toggle-manual :href "#"}
     (if (db/show-manual?) "Hide Manual" "Show Manual")]]
   )
 
@@ -220,7 +230,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 ;---------------;
 
 (defn app-component []
-  [:div {:style {:font-family "Helvetica Neue"}}
+  [:div {:style {:font-family "Helvetica Neue,sans"}}
    [:h1 "Tree Annotation"]
    [manual-component]
    [sequence-input-component]
@@ -229,7 +239,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
    [tree-annotation-component]])
 
 (defn render []
-  (r/render [app-component] (.-body js/document)))
+  (r/render [app-component] (js/document.getElementById "app")))
 
 (render)
 
