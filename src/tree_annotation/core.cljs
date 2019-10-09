@@ -10,44 +10,37 @@
 ; Node component ;
 ;----------------;
 
-(def button-width 60)
-(def button-height 20)
+;; (def button-width 60)
+;; (def button-height 20)
 
-(defn node-style [node]
-  {:position     "absolute"
-   :left         (* (:x node) button-width)
-   :top          (* (:y node) button-height)
-   :width        (dec (* button-width (:width node)))
-   :height       (dec button-height)
-   :border-style "solid"
-   :border-width "thin"
-   :border-color "#555"
-   :text-align   "center"})
+;; (defn node-style [node]
+;;   {:left         (* (:x node) button-width)
+;;    :top          (* (:y node) button-height)
+;;    :width        (dec (* button-width (:width node)))
+;;    :height       (dec button-height)})
 
-(defn selection-color [node]
-  ;;TODO: more colors?
-  (cond (:selected node) "#8e0"
-        (db/tree-selected? node) "#88e"
-        true "#ccc"))
+(defn selection-class [node]
+  (cond (:selected node) " selected"
+        (db/tree-selected? node) " tree-selected"
+        true ""))
 
 (defn node-component [node index]
   "Create a component (a button or text field) from a node."
   (if (:renaming node)
     [:input {:auto-focus true
              :type "text"
+             :class "node"
              :value (:label node)
-             :style (assoc (node-style node) :z-index 1)
+             ;; :style (node-style node)
              :on-change #(db/rename-node! (-> % .-target .-value) index)
              :on-key-press (fn [ev]
                              (when (= (.-key ev) "Enter")
                                (db/stop-renaming-node! index)))}]
-    (let [style (assoc (node-style node)
-                       :background-color (selection-color node)
-                       :cursor "pointer"
-                       )]
+    (let [;;style (node-style node)
+          ]
       [:div
-       {:style style
-        :type "button"
+       {;:style style
+        :class (str "node" (selection-class node))
         :on-click #(db/toggle-select! index)
         :on-double-click #(db/start-renaming-node! index)}
        (:label node)])))
@@ -57,32 +50,34 @@
 ;--------------------------------------;
 
 ;; todo: make component structure nested
-(defn tree-components [node index]
+(defn tree-component [node index]
   (let [children (:children node)
         length (count children)
         component (node-component node index)]
-    (into [component]
-          (reduce concat (map (fn [child i] (tree-components child (conj index i)))
-                              children
-                              (range length))))))
+    [:div {:class "subtree"}
+     (into [:div {:class "forest children"}]
+           (mapv (fn [child i] (tree-component child (conj index i)))
+                 children
+                 (range length)))
+     component]))
 
 (defn tree-annotation-component []
   "Creates a set of components corresponding to the nodes in the database
 and some buttons for interaction."
   [:div
-   [:h2 "Annotation"]
-   [:div {:class "pure-button-group" :role "group"}
-    [:button {:class "pure-button" :on-click db/combine-selected!} "Combine"]
-    [:button {:class "pure-button" :on-click db/deselect-all!} "Deselect All"]
-    [:button {:class "pure-button button-delete" :on-click db/delete-selected!} "Delete"]]
-   [:br]
+   [:div {:class "content"}
+    [:h2 "Annotation"]
+    [:div {:class "pure-button-group" :role "group"}
+     [:button {:class "pure-button" :on-click db/combine-selected!} "Combine"]
+     [:button {:class "pure-button" :on-click db/deselect-all!} "Deselect All"]
+     [:button {:class "pure-button button-delete" :on-click db/delete-selected!} "Delete"]]]
    (into
-    [:div {:style {:position "relative"}}]
+    [:div {:class "tree forest"}]
     (let [forest (db/get-forest)
           length (count forest)]
-      (flatten1 (map (fn [tree i] (tree-components tree [i]))
-                     forest
-                     (range length)))))])
+      (mapv (fn [tree i] (tree-component tree [i]))
+            forest
+            (range length))))])
 
 ;-----------------;
 ; Input component ;
@@ -100,8 +95,6 @@ and some buttons for interaction."
    [:div {:class "pure-form pure-g"}
     [:textarea {:class "pure-input-1"
                 :value (db/get-input-str)
-                :size (+ (count (db/get-input-str)) 2)
-                :style {:max-width "100%"}
                 :on-change #(db/set-input-str (-> % .-target .-value))}]
     [:div {:class "pure-u-3-4"}]
     [:button {:class "pure-button pure-button-primary pure-u-1-4"
@@ -118,8 +111,6 @@ and some buttons for interaction."
    [:div {:class "pure-form pure-g"}
     [:textarea {:class "pure-input-1"
                 :value (db/get-input-tree-str)
-                :size (+ (count (db/get-input-tree-str)) 2)
-                :style {:max-width "100%"}
                 :on-change #(db/set-input-tree-str (-> % .-target .-value))}]
     [:label {:class "pure-u-1-4 pure-checkbox"}
      [:input
@@ -154,7 +145,6 @@ and some buttons for interaction."
      [:div {:class "pure-form pure-g"}
       [:textarea {:value out-str
                   :class "pure-input-1"
-                  :style {:max-width "100%"}
                   :readonly "readonly"}]
       [:label {:class "pure-u-1-4 pure-checkbox"}
        [:input
@@ -269,4 +259,5 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
           "Enter" (db/combine-selected!)
           "Escape" (db/deselect-all!)
           "Backspace" (db/delete-selected!)
-          "Delete" (db/delete-selected!))))
+          "Delete" (db/delete-selected!)
+          nil)))

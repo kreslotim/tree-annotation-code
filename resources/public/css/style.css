@@ -27,8 +27,62 @@ html, button, input, select, textarea,
     background: rgb(202,60,60);
 }
 
-.content {
+textarea {
+    max-width: 100%;
+}
+
+.forest {
+    display: flex;
+    flex-direction: row;
+    width: min-content;
+}
+
+.tree {
     margin-left: auto;
     margin-right: auto;
-    max-width: 768px;
+    /* position: relative; */
+}
+
+.subtree {
+    /* margin-top: 1px; */
+    margin-right: 2px;
+    flex-grow: 1;
+    flex-basis: auto;
+}
+
+.subtree:last-child {
+    margin-right: 0;
+}
+
+.children {
+    margin-bottom: 2px;
+    width: 100%;
+}
+
+.node {
+    /* position: absolute; */
+    border-style: solid;
+    border-width: thin;
+    border-color: #555;
+    text-align: center;
+    min-width: 60px;
+    padding: 0.5em 1em;
+    
+}
+
+div.node {
+    cursor: pointer;
+    background-color: #ccc;
+}
+
+input.node {
+    z-index: -1;
+}
+
+.node.selected {
+    background-color: #8e0;
+}
+
+.node.tree-selected {
+    background-color: #88e;
 }
