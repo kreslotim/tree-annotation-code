@@ -31,6 +31,13 @@ textarea {
     max-width: 100%;
 }
 
+.controls {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1em;
+    width: max-content;
+}
+
 .forest {
     display: flex;
     flex-direction: row;

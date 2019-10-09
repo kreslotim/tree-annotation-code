@@ -67,7 +67,7 @@ and some buttons for interaction."
   [:div
    [:div {:class "content"}
     [:h2 "Annotation"]
-    [:div {:class "pure-button-group" :role "group"}
+    [:div {:class "pure-button-group controls" :role "group"}
      [:button {:class "pure-button" :on-click db/combine-selected!} "Combine"]
      [:button {:class "pure-button" :on-click db/deselect-all!} "Deselect All"]
      [:button {:class "pure-button button-delete" :on-click db/delete-selected!} "Delete"]]]
@@ -96,8 +96,8 @@ and some buttons for interaction."
     [:textarea {:class "pure-input-1"
                 :value (db/get-input-str)
                 :on-change #(db/set-input-str (-> % .-target .-value))}]
-    [:div {:class "pure-u-3-4"}]
-    [:button {:class "pure-button pure-button-primary pure-u-1-4"
+    [:div {:class "pure-u-1 pure-u-md-3-4"}]
+    [:button {:class "pure-button pure-button-primary pure-u-1 pure-u-md-1-4"
               :on-click load-input-sequence}
      "Load Sequence"]]])
 
@@ -112,15 +112,15 @@ and some buttons for interaction."
     [:textarea {:class "pure-input-1"
                 :value (db/get-input-tree-str)
                 :on-change #(db/set-input-tree-str (-> % .-target .-value))}]
-    [:label {:class "pure-u-1-4 pure-checkbox"}
+    [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
      [:input
       {:type "checkbox"
        :checked (db/strip-math?)
        :on-change db/toggle-strip-math!}]
-     "strip math"
+     " strip math"
      ]
-    [:div {:class "pure-u-1-2"}]
-    [:button {:class "pure-button pure-button-primary pure-u-1-4"
+    [:div {:class "pure-u-1 pure-u-md-1-2"}]
+    [:button {:class "pure-button pure-button-primary pure-u-1 pure-u-md-1-4"
               :on-click #(do (db/load-tree-string!)
                              (db/toggle-io!))}
      "Load QTree String"]]])
@@ -146,21 +146,21 @@ and some buttons for interaction."
       [:textarea {:value out-str
                   :class "pure-input-1"
                   :readonly "readonly"}]
-      [:label {:class "pure-u-1-4 pure-checkbox"}
+      [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
        [:input
         {:type "checkbox"
          :checked (db/math-inner?)
          :on-change db/toggle-math-inner!}]
-       "$ inner nodes"]
-      [:label {:class "pure-u-1-4 pure-checkbox"}
+       " math inner nodes"]
+      [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
        [:input
         {:type "checkbox"
          :checked (db/math-leaves?)
          :on-change db/toggle-math-leaves!}]
-       "math leaf nodes"]
-      [:div {:class "pure-u-1-4"}]
+       " math leaf nodes"]
+      [:div {:class "pure-u-1 pure-u-md-1-4"}]
       [:button
-       {:class "pure-button pure-u-1-4" :on-click #(copy-to-clipboard out-str)}
+       {:class "pure-button pure-u-1 pure-u-md-1-4" :on-click #(copy-to-clipboard out-str)}
        "Copy to Clipboard"]]]))
 
 ;--------------;
