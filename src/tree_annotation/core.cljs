@@ -33,7 +33,7 @@
              :value (:label node)
              ;; :style (node-style node)
              :on-change #(db/rename-node! (-> % .-target .-value) index)
-             :on-key-press (fn [ev]
+             :on-key-down (fn [ev]
                              (when (= (.-key ev) "Enter")
                                (db/stop-renaming-node! index)))}]
     (let [;;style (node-style node)
@@ -95,7 +95,10 @@ and some buttons for interaction."
    [:div {:class "pure-form pure-g"}
     [:textarea {:class "pure-input-1"
                 :value (db/get-input-str)
-                :on-change #(db/set-input-str (-> % .-target .-value))}]
+                :on-change #(db/set-input-str (-> % .-target .-value))
+                :on-key-down (fn [ev]
+                                (when (= (.-key ev) "Enter")
+                                  (load-input-sequence)))}]
     [:div {:class "pure-u-1 pure-u-md-3-4"}]
     [:button {:class "pure-button pure-button-primary pure-u-1 pure-u-md-1-4"
               :on-click load-input-sequence}
@@ -111,7 +114,12 @@ and some buttons for interaction."
    [:div {:class "pure-form pure-g"}
     [:textarea {:class "pure-input-1"
                 :value (db/get-input-tree-str)
-                :on-change #(db/set-input-tree-str (-> % .-target .-value))}]
+                :on-change #(db/set-input-tree-str (-> % .-target .-value))
+                :on-key-down (fn [ev]
+                               (when (= (.-key ev) "Enter")
+                                 (db/load-tree-string!)
+                                 (db/toggle-io!)
+                                 false))}]
     [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
      [:input
       {:type "checkbox"

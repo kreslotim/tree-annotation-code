@@ -344,7 +344,6 @@ If `strip-math` is `true`, math labels will not have $s."
               (let [parse (qtree-parser (:input-tree-str db))
                     strip-math (:strip-math db)
                     forest' (mapv (partial tree-from-parse strip-math) (vec (next parse)))]
-                (js/console.log "parse: " (str parse))
                 (assoc db :forest (first (recalc-coords forest' 0)))))))
 
 ;---------------------;
