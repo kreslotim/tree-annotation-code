@@ -4,6 +4,7 @@
 
 (ns tree-annotation.database
   (:require [reagent.core :as r]
+            [clojure.string :as str]
             [instaparse.core :as insta :refer-macros [defparser]]))
 
 ; private annotation does currently not work in clojure script
@@ -26,7 +27,7 @@
   (:input-str @db))
 
 (defn set-input-str [input-str]
-  (swap! db assoc :input-str input-str))
+  (swap! db assoc :input-str (str/trim input-str)))
 
 ;----------------------------;
 ; Input tree string requests ;
@@ -36,7 +37,7 @@
   (:input-tree-str @db))
 
 (defn set-input-tree-str [input-tree-str]
-  (swap! db assoc :input-tree-str input-tree-str))
+  (swap! db assoc :input-tree-str (str/trim input-tree-str)))
 
 (defn strip-math? []
   (:strip-math @db))
@@ -303,9 +304,9 @@ Returns either the unchanged node or a list of remaining subtrees."
 
 (defparser qtree-parser "
   forest   = node*
-  node     = (label | <'[.'> label children <']'>) <' '?>
+  node     = (label | <'[.'> label children <']'>) <#'\\s*'>
   children = node+
-  label    = (group | math | string) <' '?>
+  label    = (group | math | string) <#'\\s*'>
   group    = <'{'> #'[^{}]*' (group #'[^{}]*')* <'}'>
   math     = <'$'> #'[^$\\[\\]. ]+' <'$'>
   string   = #'\\w+'
