@@ -27,7 +27,7 @@
   (:input-str @db))
 
 (defn set-input-str [input-str]
-  (swap! db assoc :input-str (str/trim input-str)))
+  (swap! db assoc :input-str (str/trim-newline input-str)))
 
 ;----------------------------;
 ; Input tree string requests ;
@@ -37,7 +37,7 @@
   (:input-tree-str @db))
 
 (defn set-input-tree-str [input-tree-str]
-  (swap! db assoc :input-tree-str (str/trim input-tree-str)))
+  (swap! db assoc :input-tree-str (str/trim-newline input-tree-str)))
 
 (defn strip-math? []
   (:strip-math @db))
