@@ -232,18 +232,27 @@ of inner and leaf nodes should be enclosed in $s, respecively."
   ([forest]
    "Finds groups of adjacent selected trees in `forest` and combines them."
    (combine-selected-trees forest [] []))
-  ([forest group acc]
-   (letfn [(combine-if [coll xs]
-             (if (empty? xs) coll (conj coll (combine xs))))]
+  ([forest group done-forest]
+   ;; `forest` is the part of the forest still to be processed.
+   ;; `group` is the current group of selected trees.
+   ;; `done-forest` is the part of the forest that has already been processed.
+   (letfn [(combine+add-group [done-forest group]
+             ;; if `group` is non-empty, combine it and add it to `done-forest`
+             (if (empty? group)
+               done-forest
+               (conj done-forest (combine group))))]
      (if (empty? forest)
-       ; end of forest
-       (combine-if acc group)
-       ; in forest
+       ;; end of forest: combine the remaining group
+       (combine+add-group done-forest group)
+       ;; in forest: look at next tree
        (let [tree (first forest)
              tail (rest forest)]
          (if (tree-selected? tree)
-           (combine-selected-trees tail (conj group tree) acc)
-           (combine-selected-trees tail [] (conj (combine-if acc group) tree))))))))
+           ;; selected? -> add to group of selected trees
+           (combine-selected-trees tail (conj group tree) done-forest)
+           ;; not selected? -> combine group and continue
+           (combine-selected-trees tail [] (conj (combine+add-group done-forest group)
+                                                 tree))))))))
 
 (defn combine-selected []
   "Finds groups of adjacent selected trees and combines them."
