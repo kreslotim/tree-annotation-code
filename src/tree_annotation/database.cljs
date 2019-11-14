@@ -67,10 +67,11 @@ of inner and leaf nodes should be enclosed $s, respecively."
 
 (defn get-output-str []
   "Returns the qtree string representation of the forest."
-  (let [math-inner (:math-inner @db)
-        math-leaves (:math-leaves @db)]
+  (let [db @db
+        math-inner (:math-inner db)
+        math-leaves (:math-leaves db)]
     (apply str (map (partial tree-str math-inner math-leaves)
-                    (:forest @db)))))
+                    (:forest db)))))
 
 (defn math-inner? []
   (:math-inner @db))
