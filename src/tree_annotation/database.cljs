@@ -210,12 +210,13 @@ Returns the updated forest."
   "Puts the node at `index` into renaming mode."
   (letfn [(start-renaming [node]
             (assoc node :renaming true))]
-    (swap! db update :forest update-forest start-renaming index)))
+    (swap! db update :forest (comp deselect-all-trees update-forest) start-renaming index)))
 
 (defn stop-renaming-node [index]
   "Puts the node at `index` out of renaming mode."
   (letfn [(stop-renaming [node]
-            (assoc node :renaming false))]
+            (assoc node :renaming false
+                        :selected true))]
     (swap! db update :forest update-forest stop-renaming index)))
 
 ;; combine
@@ -225,6 +226,7 @@ Returns the updated forest."
   "Combines the sequence `children` into a new tree."
   (let [label (:label (last children))]
     (assoc default-node
+           :selected true
            :label label
            :children (mapv deselect-tree children)
            :x (:x (first children))
