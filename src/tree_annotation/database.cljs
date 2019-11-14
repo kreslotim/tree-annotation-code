@@ -127,19 +127,6 @@ of inner and leaf nodes should be enclosed in $s, respecively."
     forest
     (update forest (first index) update-node f (rest index))))
 
-(defn map-tree [f tree]
-  "Map `f` over all nodes in `tree`.
-   `f` is first applied to children and then to the parent."
-  (let [children' (mapv (partial map-tree f) (:children tree))
-        tree' (assoc tree :children children')]
-    (f tree)))
-
-(defn map-forest [f forest]
-  "Map `f` over all nodes in `forest`.
-   `f` is first applied to children and then to the parent."
-  (mapv (partial map-tree f) forest))
-
-
 ;; forest requests
 ;; ---------------
 
@@ -233,7 +220,7 @@ of inner and leaf nodes should be enclosed in $s, respecively."
     (assoc default-node
            :selected true
            :label label
-           :children (mapv deselect-tree children)
+           :children (deselect-all-trees children)
            :x (:x (first children))
            :y (inc (reduce max (map :y children)))
            :width (reduce + (map :width children)))))
