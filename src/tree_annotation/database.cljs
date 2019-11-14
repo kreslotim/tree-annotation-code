@@ -112,6 +112,7 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 
 (defn update-node [node f index]
   "Updates the node at `index` in the tree under `node` by applying `f` to it.
+   `index` represents the path to a node as a sequence of child indices.
    Returns the updated tree."
   (if (empty? index)
     (f node)
@@ -120,6 +121,7 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 
 (defn update-forest [forest f index]
   "Updates the node at `index` in `forest` by applying `f` to it.
+   `index` represents the path to a node as a sequence of child indices.
    Returns the updated forest."
   (if (empty? index)
     forest
@@ -164,7 +166,8 @@ of inner and leaf nodes should be enclosed in $s, respecively."
   (update node :selected not))
 
 (defn toggle-select! [index]
-  "Toggles the selection state of the node at `index`."
+  "Toggles the selection state of the node at `index`.
+   `index` represents the path to a node as a sequence of child indices."
   (swap! db update :forest update-forest toggle-select index))
 
 ;; deselect
@@ -201,19 +204,22 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 ;;   (swap! db update :forest #(rename-selected % label)))
 
 (defn rename-node [label index]
-  "Assings the label `label` to the node at `index`."
+  "Assings the label `label` to the node at `index`.
+   `index` represents the path to a node as a sequence of child indices."
   (letfn [(rename [node]
             (assoc node :label label))]
     (swap! db update :forest update-forest rename index)))
 
 (defn start-renaming-node [index]
-  "Puts the node at `index` into renaming mode."
+  "Puts the node at `index` into renaming mode.
+   `index` represents the path to a node as a sequence of child indices."
   (letfn [(start-renaming [node]
             (assoc node :renaming true))]
     (swap! db update :forest (comp deselect-all-trees update-forest) start-renaming index)))
 
 (defn stop-renaming-node [index]
-  "Puts the node at `index` out of renaming mode."
+  "Puts the node at `index` out of renaming mode.
+   `index` represents the path to a node as a sequence of child indices."
   (letfn [(stop-renaming [node]
             (assoc node :renaming false
                         :selected true))]
