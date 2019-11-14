@@ -52,7 +52,7 @@
 (defn tree-str [math-inner math-leaves node]
   "Converts `node` into a qtree string.
 `math-inner` and `math-leaves` are booleans that indicate whether labels
-of inner and leaf nodes should be enclosed $s, respecively."
+of inner and leaf nodes should be enclosed in $s, respecively."
   (let [children (:children node)
         label    (:label node)
         math     (or (and (leaf? node) math-leaves)
