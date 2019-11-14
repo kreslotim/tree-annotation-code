@@ -119,21 +119,21 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 
 (defn update-forest [forest f index]
   "Updates the node at `index` in `forest` by applying `f` to it.
-Returns the updated forest."
+   Returns the updated forest."
   (if (empty? index)
     forest
     (update forest (first index) update-node f (rest index))))
 
 (defn map-tree [f tree]
   "Map `f` over all nodes in `tree`.
-`f` is first applied to children and then to the parent."
+   `f` is first applied to children and then to the parent."
   (let [children' (mapv (partial map-tree f) (:children tree))
         tree' (assoc tree :children children')]
     (f tree)))
 
 (defn map-forest [f forest]
   "Map `f` over all nodes in `forest`.
-`f` is first applied to children and then to the parent."
+   `f` is first applied to children and then to the parent."
   (mapv (partial map-tree f) forest))
 
 
@@ -256,7 +256,7 @@ Returns the updated forest."
 
 (defn node-delete-selected [node]
   "Deletes all selected children of `node`.
-Returns either the unchanged node or a list of remaining subtrees."
+   Returns either the unchanged node or a list of remaining subtrees."
   (let [subtrees (mapv node-delete-selected (:children node))]
     (if (or (and (:selected node) (not (leaf? node)))
             (not-every? map? subtrees))
@@ -324,7 +324,7 @@ If `strip-math` is `true`, math labels will not have $s."
       "empty")))
 
 (defn tree-from-parse [strip-math parse]
-  "Converts a pars of a tree into a tree representation without coordinates."
+  "Converts a parse of a tree into a tree representation without coordinates."
   (let [label (parse-label strip-math (nth parse 1 "empty"))
         children (vec (rest (nth parse 2 [])))]
     (assoc default-node
