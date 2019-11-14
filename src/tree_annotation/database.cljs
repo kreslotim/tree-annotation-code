@@ -95,7 +95,7 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 (def default-node
   {:selected false
    :renaming false
-   :label "empty"
+   :label ""
    :children []
    :x 0 :y 0
    :width 1})
@@ -162,13 +162,12 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 
 ;; toggle
 
-(defn toggle-select [node]
-  (update node :selected not))
-
 (defn toggle-select! [index]
   "Toggles the selection state of the node at `index`.
    `index` represents the path to a node as a sequence of child indices."
-  (swap! db update :forest update-forest toggle-select index))
+  (letfn [(toggle [node]
+            (update node :selected not))]
+    (swap! db update :forest update-forest toggle index)))
 
 ;; deselect
 
@@ -264,13 +263,14 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 ;; ------
 
 (defn node-delete-selected [node]
-  "Deletes all selected children of `node`.
-   Returns either the unchanged node or a list of remaining subtrees."
+  "Deletes all selected descendants of `node` (including `node` itself) and their ancestors.
+   Returns either the unchanged node or, if any node was deleted,
+   a list of remaining subtrees."
   (let [subtrees (mapv node-delete-selected (:children node))]
-    (if (or (and (:selected node) (not (leaf? node)))
-            (not-every? map? subtrees))
-      (vec (flatten subtrees))
-      node)))
+    (if (or (and (:selected node) (not (leaf? node))) ; node selected?     -> delete node
+            (not-every? map? subtrees))               ; any child deleted? -> delete node
+      (vec (flatten subtrees))                        ; delete node by returning chilren
+      node)))                                         ; keep node
 
 (defn delete-selected []
   "Delete all selected nodes and their ancestors."
