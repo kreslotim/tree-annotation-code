@@ -111,7 +111,7 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 
 (defn update-node [node f index]
   "Updates the node at `index` in the tree under `node` by applying `f` to it.
-Returns the updated tree."
+   Returns the updated tree."
   (if (empty? index)
     (f node)
     (let [children (update (:children node) (first index) update-node f (rest index))]
