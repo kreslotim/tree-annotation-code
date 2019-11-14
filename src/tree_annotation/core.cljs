@@ -37,10 +37,10 @@
              :type "text"
              :value (:label node)
              :style (assoc (button-style node) :z-index 1)
-             :on-change #(db/rename-node! (-> % .-target .-value) index)
+             :on-change #(db/rename-node (-> % .-target .-value) index)
              :on-key-press (fn [ev]
                              (when (= (.-key ev) "Enter")
-                               (db/stop-renaming-node! index)))}]
+                               (db/stop-renaming-node index)))}]
     (let [style (assoc (button-style node)
                        :background-color (selection-color node)
                        :cursor "pointer"
@@ -49,7 +49,7 @@
        {:style style
         :type "button"
         :on-click #(db/toggle-select! index)
-        :on-double-click #(db/start-renaming-node! index)}
+        :on-double-click #(db/start-renaming-node index)}
        (:label node)])))
 
 ;--------------------------------------;
@@ -72,9 +72,9 @@ and some buttons for interaction."
   [:div
    [:h2 "Annotation"]
    [:div
-    [:button {:on-click db/combine-selected!} "Combine"]
-    [:button {:on-click db/delete-selected!} "Delete"]
-    [:button {:on-click db/deselect-all!} "Deselect All"]]
+    [:button {:on-click db/combine-selected} "Combine"]
+    [:button {:on-click db/delete-selected} "Delete"]
+    [:button {:on-click db/deselect-all} "Deselect All"]]
    [:br]
    (into
     [:div {:style {:position "relative"}}]
@@ -91,7 +91,7 @@ and some buttons for interaction."
 (defn load-input-sequence []
   "Create leaf nodes from an input string which is split on spaces."
   (let [labels (str/split (db/get-input-str) #" ")]
-    (db/set-leaves! labels)))
+    (db/set-leaves labels)))
 
 (defn sequence-input-component []
   [:div
@@ -122,7 +122,7 @@ and some buttons for interaction."
        :on-change db/toggle-strip-math!}]
      "strip math"
      ]
-    [:button {:on-click db/load-tree-string!} "Load QTree String"]]])
+    [:button {:on-click db/load-tree-string} "Load QTree String"]]])
 
 ;------------------;
 ; Output component ;
@@ -240,7 +240,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 (set! (.-onkeydown js/document)
       (fn [event]
         (case (.-code event)
-          "Enter" (db/combine-selected!)
-          "Escape" (db/deselect-all!)
-          "Backspace" (db/delete-selected!)
-          "Delete" (db/delete-selected!))))
+          "Enter" (db/combine-selected)
+          "Escape" (db/deselect-all)
+          "Backspace" (db/delete-selected)
+          "Delete" (db/delete-selected))))

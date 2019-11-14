@@ -150,7 +150,7 @@ Returns the updated forest."
          :x x :y 0
          :width 1))
 
-(defn set-leaves! [leaves]
+(defn set-leaves [leaves]
   "Replaces the forest with a list of unconnected leaves."
   (swap! db assoc :forest (mapv make-leaf leaves (range (count leaves)))))
 
@@ -168,20 +168,20 @@ Returns the updated forest."
 
 ;; deselect
 
-(declare deselect-all)
+(declare deselect-all-trees)
 
 (defn deselect-tree [node]
   "Deselects a node and all its descendants."
   (assoc node
          :selected false
-         :children (deselect-all (:children node))))
+         :children (deselect-all-trees (:children node))))
 
-(defn deselect-all [forest]
+(defn deselect-all-trees [forest]
   (mapv deselect-tree forest))
 
-(defn deselect-all! []
+(defn deselect-all []
   "Deselects all nodes."
-  (swap! db update :forest deselect-all))
+  (swap! db update :forest deselect-all-trees))
 
 ;; rename
 ;; ------
@@ -199,26 +199,23 @@ Returns the updated forest."
 ;; (defn rename-selected! [label]
 ;;   (swap! db update :forest #(rename-selected % label)))
 
-(defn rename-node [node label]
-  (assoc node :label label))
-
-(defn rename-node! [label index]
+(defn rename-node [label index]
   "Assings the label `label` to the node at `index`."
-  (swap! db update :forest update-forest #(rename-node % label) index))
+  (letfn [(rename [node]
+            (assoc node :label label))]
+    (swap! db update :forest update-forest rename index)))
 
-(defn start-renaming [node]
-  (assoc node :renaming true))
-
-(defn start-renaming-node! [index]
+(defn start-renaming-node [index]
   "Puts the node at `index` into renaming mode."
-  (swap! db update :forest update-forest start-renaming index))
+  (letfn [(start-renaming [node]
+            (assoc node :renaming true))]
+    (swap! db update :forest update-forest start-renaming index)))
 
-(defn stop-renaming [node]
-  (assoc node :renaming false))
-
-(defn stop-renaming-node! [index]
+(defn stop-renaming-node [index]
   "Puts the node at `index` out of renaming mode."
-  (swap! db update :forest update-forest stop-renaming index))
+  (letfn [(stop-renaming [node]
+            (assoc node :renaming false))]
+    (swap! db update :forest update-forest stop-renaming index)))
 
 ;; combine
 ;; -------
@@ -233,10 +230,10 @@ Returns the updated forest."
            :y (inc (reduce max (map :y children)))
            :width (reduce + (map :width children)))))
 
-(defn combine-selected
+(defn combine-selected-trees
   ([forest]
    "Finds groups of adjacent selected trees in `forest` and combines them."
-   (combine-selected forest [] []))
+   (combine-selected-trees forest [] []))
   ([forest group acc]
    (letfn [(combine-if [coll xs]
              (if (empty? xs) coll (conj coll (combine xs))))]
@@ -247,12 +244,12 @@ Returns the updated forest."
        (let [tree (first forest)
              tail (rest forest)]
          (if (tree-selected? tree)
-           (combine-selected tail (conj group tree) acc)
-           (combine-selected tail [] (conj (combine-if acc group) tree))))))))
+           (combine-selected-trees tail (conj group tree) acc)
+           (combine-selected-trees tail [] (conj (combine-if acc group) tree))))))))
 
-(defn combine-selected! []
+(defn combine-selected []
   "Finds groups of adjacent selected trees and combines them."
-  (swap! db update :forest combine-selected))
+  (swap! db update :forest combine-selected-trees))
 
 ;; delete
 ;; ------
@@ -266,13 +263,11 @@ Returns either the unchanged node or a list of remaining subtrees."
       (vec (flatten subtrees))
       node)))
 
-(defn delete-selected [forest]
-  "Delete all selected nodes and their ancestors from `forest`."
-  (vec (flatten (map node-delete-selected forest))))
-
-(defn delete-selected! []
+(defn delete-selected []
   "Delete all selected nodes and their ancestors."
-  (swap! db update :forest delete-selected))
+  (letfn [(delete-sel [forest]
+            (vec (flatten (map node-delete-selected forest))))]
+    (swap! db update :forest delete-sel)))
 
 ;; parse
 ;; -----
@@ -336,7 +331,7 @@ If `strip-math` is `true`, math labels will not have $s."
            :label label
            :children (mapv (partial tree-from-parse strip-math) children))))
 
-(defn load-tree-string! []
+(defn load-tree-string []
   "Replaces the forest by the forest parsed from the qtree input string."
   (swap! db (fn [db]
               (let [parse (qtree-parser (:input-tree-str db))
