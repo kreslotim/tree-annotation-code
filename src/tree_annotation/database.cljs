@@ -57,7 +57,10 @@ of inner and leaf nodes should be enclosed in $s, respecively."
         label    (:label node)
         math     (or (and (leaf? node) math-leaves)
                      (and (not (leaf? node)) math-inner))
-        wrap     (fn [s] (if math (str "$" s "$") s))]
+        wrap     (fn [label] (cond
+                                math (str "$" label "$")
+                                (re-find #"\s" label) (str "{" label "}")
+                                :else label))]
     (if (empty? children) ; if the node is a leaf
       (str (wrap label) " ")
       (apply str
