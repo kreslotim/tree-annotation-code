@@ -34,8 +34,8 @@
              ;; :style (node-style node)
              :on-change #(db/rename-node (-> % .-target .-value) index)
              :on-key-down (fn [ev]
-                             (when (= (.-key ev) "Enter")
-                               (db/stop-renaming-node index)))}]
+                            (when (= (.-key ev) "Enter")
+                              (db/stop-renaming-node index)))}]
     [:div
      {;:style style
       :class (str "node" (selection-class node))
@@ -115,7 +115,7 @@ and some buttons for interaction."
                 :on-change #(db/set-input-tree-str (-> % .-target .-value))
                 :on-key-down (fn [ev]
                                (when (= (.-key ev) "Enter")
-                                 (db/load-tree-string!)
+                                 (db/load-tree-string)
                                  (db/toggle-io!)
                                  false))}]
     [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
@@ -262,9 +262,10 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 
 (set! (.-onkeydown js/document)
       (fn [event]
-        (case (.-code event)
-          "Enter" (db/combine-selected)
-          "Escape" (db/deselect-all)
-          "Backspace" (db/delete-selected)
-          "Delete" (db/delete-selected)
-          nil)))
+        (when (identical? (.-target event) (.-body js/document))
+          (case (.-code event)
+            "Enter" (db/combine-selected)
+            "Escape" (db/deselect-all)
+            "Backspace" (db/delete-selected)
+            "Delete" (db/delete-selected)
+            nil))))
