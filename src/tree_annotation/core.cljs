@@ -151,7 +151,7 @@ and some buttons for interaction."
      [:div {:class "pure-form pure-g"}
       [:textarea {:value out-str
                   :class "pure-input-1"
-                  :readonly "readonly"}]
+                  :readOnly "true"}]
       [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
        [:input
         {:type "checkbox"
