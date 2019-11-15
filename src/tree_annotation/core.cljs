@@ -32,18 +32,16 @@
              :class "node"
              :value (:label node)
              ;; :style (node-style node)
-             :on-change #(db/rename-node! (-> % .-target .-value) index)
+             :on-change #(db/rename-node (-> % .-target .-value) index)
              :on-key-down (fn [ev]
                              (when (= (.-key ev) "Enter")
-                               (db/stop-renaming-node! index)))}]
-    (let [;;style (node-style node)
-          ]
-      [:div
-       {;:style style
-        :class (str "node" (selection-class node))
-        :on-click #(db/toggle-select! index)
-        :on-double-click #(db/start-renaming-node! index)}
-       (:label node)])))
+                               (db/stop-renaming-node index)))}]
+    [:div
+     {;:style style
+      :class (str "node" (selection-class node))
+      :on-click #(db/toggle-select! index)
+      :on-double-click #(db/start-renaming-node index)}
+     (:label node)]))
 
 ;--------------------------------------;
 ; Tree component and tree manipulation ;
@@ -68,9 +66,9 @@ and some buttons for interaction."
    [:div {:class "content"}
     [:h2 "Annotation"]
     [:div {:class "pure-button-group controls" :role "group"}
-     [:button {:class "pure-button" :on-click db/combine-selected!} "Combine"]
-     [:button {:class "pure-button" :on-click db/deselect-all!} "Deselect All"]
-     [:button {:class "pure-button button-delete" :on-click db/delete-selected!} "Delete"]]]
+     [:button {:class "pure-button" :on-click db/combine-selected} "Combine"]
+     [:button {:class "pure-button" :on-click db/deselect-all} "Deselect All"]
+     [:button {:class "pure-button button-delete" :on-click db/delete-selected} "Delete"]]]
    (into
     [:div {:class "tree forest"}]
     (let [forest (db/get-forest)
@@ -86,7 +84,7 @@ and some buttons for interaction."
 (defn load-input-sequence []
   "Create leaf nodes from an input string which is split on spaces."
   (let [labels (str/split (db/get-input-str) #" ")]
-    (db/set-leaves! labels)
+    (db/set-leaves labels)
     (db/toggle-io!)))
 
 (defn sequence-input-component []
@@ -129,7 +127,7 @@ and some buttons for interaction."
      ]
     [:div {:class "pure-u-1 pure-u-md-1-2"}]
     [:button {:class "pure-button pure-button-primary pure-u-1 pure-u-md-1-4"
-              :on-click #(do (db/load-tree-string!)
+              :on-click #(do (db/load-tree-string)
                              (db/toggle-io!))}
      "Load QTree String"]]])
 
@@ -194,7 +192,8 @@ and some buttons for interaction."
 
 ## Manual
 
-by [Daniel Harasim](https://dcml.epfl.ch/lab/harasim/) 
+by [Daniel Harasim](https://dcml.epfl.ch/lab/harasim/),
+[Christoph Finkensiep](https://dcml.epfl.ch/lab/finkensiep/),
 and the [Digital and Cognitive Musicology Lab (DCML)](https://dcml.epfl.ch)
 
 This is an open source project. Find the code [here](https://github.com/DCMLab/tree-annotation-code).
@@ -264,8 +263,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 (set! (.-onkeydown js/document)
       (fn [event]
         (case (.-code event)
-          "Enter" (db/combine-selected!)
-          "Escape" (db/deselect-all!)
-          "Backspace" (db/delete-selected!)
-          "Delete" (db/delete-selected!)
+          "Enter" (db/combine-selected)
+          "Escape" (db/deselect-all)
+          "Backspace" (db/delete-selected)
+          "Delete" (db/delete-selected)
           nil)))
