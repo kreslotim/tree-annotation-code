@@ -282,28 +282,28 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 ;; parse
 ;; -----
 
-(declare recalc-coords)
+;; (declare recalc-coords)
 
-(defn recalc-coords-tree [node offset]
-  "Recalculate the coordinates in a tree with x offset `offset`."
-  (let [[children' offset-children] (recalc-coords (:children node) offset)
-        offset' (if (leaf? node) (inc offset-children) offset-children)
-        node' (assoc node
-                     :children children'
-                     :x offset
-                     :y (inc (reduce max 0 (map :y children')))
-                     :width (- offset' offset))]
-    [node' offset']))
+;; (defn recalc-coords-tree [node offset]
+;;   "Recalculate the coordinates in a tree with x offset `offset`."
+;;   (let [[children' offset-children] (recalc-coords (:children node) offset)
+;;         offset' (if (leaf? node) (inc offset-children) offset-children)
+;;         node' (assoc node
+;;                      :children children'
+;;                      :x offset
+;;                      :y (inc (reduce max 0 (map :y children')))
+;;                      :width (- offset' offset))]
+;;     [node' offset']))
 
-(defn recalc-coords [forest offset]
-  "Recalculates the coordinates in a `forest` with x offset `offset`."
-  (if (empty? forest)
-    [[] offset]
-    (let [tree (first forest)
-          tail (rest forest)
-          [tree' offset-children] (recalc-coords-tree tree offset)
-          [tail' offset-tail] (recalc-coords tail offset-children)]
-      [(into [tree'] tail') offset-tail])))
+;; (defn recalc-coords [forest offset]
+;;   "Recalculates the coordinates in a `forest` with x offset `offset`."
+;;   (if (empty? forest)
+;;     [[] offset]
+;;     (let [tree (first forest)
+;;           tail (rest forest)
+;;           [tree' offset-children] (recalc-coords-tree tree offset)
+;;           [tail' offset-tail] (recalc-coords tail offset-children)]
+;;       [(into [tree'] tail') offset-tail])))
 
 (defparser qtree-parser "
   forest   = node*
@@ -347,7 +347,7 @@ If `strip-math` is `true`, math labels will not have $s."
               (let [parse (qtree-parser (:input-tree-str db))
                     strip-math (:strip-math db)
                     forest' (mapv (partial tree-from-parse strip-math) (vec (next parse)))]
-                (assoc db :forest (first (recalc-coords forest' 0)))))))
+                (assoc db :forest forest')))))
 
 ;---------------------;
 ; visibility requests ;

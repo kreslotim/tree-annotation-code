@@ -10,16 +10,9 @@
 ; Node component ;
 ;----------------;
 
-;; (def button-width 60)
-;; (def button-height 20)
-
-;; (defn node-style [node]
-;;   {:left         (* (:x node) button-width)
-;;    :top          (* (:y node) button-height)
-;;    :width        (dec (* button-width (:width node)))
-;;    :height       (dec button-height)})
-
 (defn selection-class [node]
+  "Returns a string of CSS classes to add to a node's class attribute
+   based on the node's selection status."
   (cond (:selected node) " selected"
         (db/tree-selected? node) " tree-selected"
         true ""))
@@ -31,14 +24,12 @@
              :type "text"
              :class "node"
              :value (:label node)
-             ;; :style (node-style node)
              :on-change #(db/rename-node (-> % .-target .-value) index)
              :on-key-down (fn [ev]
                             (when (= (.-key ev) "Enter")
                               (db/stop-renaming-node index)))}]
     [:div
-     {;:style style
-      :class (str "node" (selection-class node))
+     {:class (str "node" (selection-class node))
       :on-click #(db/toggle-select! index)
       :on-double-click #(db/start-renaming-node index)}
      (:label node)]))
@@ -47,7 +38,6 @@
 ; Tree component and tree manipulation ;
 ;--------------------------------------;
 
-;; todo: make component structure nested
 (defn tree-component [node index]
   (let [children (:children node)
         length (count children)
@@ -180,7 +170,7 @@ and some buttons for interaction."
       [sequence-input-component]
       [tree-input-component]
       [output-component]])
-   [:a {:on-click db/toggle-io! :href "javascript:void(0)"}
+   [:a {:on-click db/toggle-io! :href "javascript:void(0)"} ; void() is used as a dummy href
     (if (db/show-io?) "Hide IO Section" "Show IO Section")]])
 
 
@@ -235,7 +225,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
    (when (db/show-manual?)
      [:div {:class "manual"}
       (md/md->hiccup manual-string)])
-   [:a {:on-click db/toggle-manual! :href "javascript:void(0)"}
+   [:a {:on-click db/toggle-manual! :href "javascript:void(0)"} ; void() is used as a dummy href
     (if (db/show-manual?) "Hide Manual" "Show Manual")]]
   )
 
@@ -262,6 +252,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 
 (set! (.-onkeydown js/document)
       (fn [event]
+        ;; check whether event was fired on element (e.g. text field)
+        ;; or globally (target == document body)
         (when (identical? (.-target event) (.-body js/document))
           (case (.-code event)
             "Enter" (db/combine-selected)
