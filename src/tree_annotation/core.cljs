@@ -10,79 +10,62 @@
 ; Node component ;
 ;----------------;
 
-(def button-width 60)
-(def button-height 20)
-
-(defn button-style [node]
-  {:position     "absolute"
-   :left         (* (:x node) button-width)
-   :top          (* (:y node) button-height)
-   :width        (dec (* button-width (:width node)))
-   :height       (dec button-height)
-   :border-style "solid"
-   :border-width "thin"
-   :border-color "#555"
-   :text-align   "center"})
-
-(defn selection-color [node]
-  ;;TODO: more colors?
-  (cond (:selected node) "#8e0"
-        (db/tree-selected? node) "#88e"
-        true "#ccc"))
+(defn selection-class [node]
+  "Returns a string of CSS helper classes to add to a node's class attribute
+   indicating the node's selection status."
+  (cond (:selected node) " selected"
+        (db/tree-selected? node) " tree-selected"
+        true ""))
 
 (defn node-component [node index]
   "Create a component (a button or text field) from a node."
   (if (:renaming node)
     [:input {:auto-focus true
              :type "text"
+             :class "node"
              :value (:label node)
-             :style (assoc (button-style node) :z-index 1)
              :on-change #(db/rename-node (-> % .-target .-value) index)
-             :on-key-press (fn [ev]
-                             (when (= (.-key ev) "Enter")
-                               (db/stop-renaming-node index)))}]
-    (let [style (assoc (button-style node)
-                       :background-color (selection-color node)
-                       :cursor "pointer"
-                       )]
-      [:div
-       {:style style
-        :type "button"
-        :on-click #(db/toggle-select! index)
-        :on-double-click #(db/start-renaming-node index)}
-       (:label node)])))
+             :on-key-down (fn [ev]
+                            (when (= (.-key ev) "Enter")
+                              (db/stop-renaming-node index)))}]
+    [:div
+     {:class (str "node" (selection-class node))
+      :on-click #(db/toggle-select! index)
+      :on-double-click #(db/start-renaming-node index)}
+     (:label node)]))
 
 ;--------------------------------------;
 ; Tree component and tree manipulation ;
 ;--------------------------------------;
 
-;; todo: make component structure nested
-(defn tree-components [node index]
+(defn tree-component [node index]
   (let [children (:children node)
         length (count children)
         component (node-component node index)]
-    (into [component]
-          (reduce concat (map (fn [child i] (tree-components child (conj index i)))
-                              children
-                              (range length))))))
+    [:div {:class "subtree"}
+     (into [:div {:class "forest children"}]
+           (mapv (fn [child i] (tree-component child (conj index i)))
+                 children
+                 (range length)))
+     component]))
 
 (defn tree-annotation-component []
   "Creates a set of components corresponding to the nodes in the database
 and some buttons for interaction."
   [:div
-   [:h2 "Annotation"]
-   [:div
-    [:button {:on-click db/combine-selected} "Combine"]
-    [:button {:on-click db/delete-selected} "Delete"]
-    [:button {:on-click db/deselect-all} "Deselect All"]]
-   [:br]
+   [:div {:class "content"}
+    [:h2 "Annotation"]
+    [:div {:class "pure-button-group controls" :role "group"}
+     [:button {:class "pure-button" :on-click db/combine-selected} "Combine"]
+     [:button {:class "pure-button" :on-click db/deselect-all} "Deselect All"]
+     [:button {:class "pure-button button-delete" :on-click db/delete-selected} "Delete"]]]
    (into
-    [:div {:style {:position "relative"}}]
+    [:div {:class "tree forest"}]
     (let [forest (db/get-forest)
           length (count forest)]
-      (flatten1 (map (fn [tree i] (tree-components tree [i]))
-                     forest
-                     (range length)))))])
+      (mapv (fn [tree i] (tree-component tree [i]))
+            forest
+            (range length))))])
 
 ;-----------------;
 ; Input component ;
@@ -91,17 +74,23 @@ and some buttons for interaction."
 (defn load-input-sequence []
   "Create leaf nodes from an input string which is split on spaces."
   (let [labels (str/split (db/get-input-str) #" ")]
-    (db/set-leaves labels)))
+    (db/set-leaves labels)
+    (db/toggle-io!)))
 
 (defn sequence-input-component []
   [:div
    [:h2 "Input (list of leaves)"]
-   [:textarea {:value (db/get-input-str)
-               :size (+ (count (db/get-input-str)) 2)
-               :style {:width 520}
-               :on-change #(db/set-input-str (-> % .-target .-value))}]
-   [:br]
-   [:button {:on-click load-input-sequence} "Load Sequence"]])
+   [:div {:class "pure-form pure-g"}
+    [:textarea {:class "pure-input-1"
+                :value (db/get-input-str)
+                :on-change #(db/set-input-str (-> % .-target .-value))
+                :on-key-down (fn [ev]
+                                (when (= (.-key ev) "Enter")
+                                  (load-input-sequence)))}]
+    [:div {:class "pure-u-1 pure-u-md-3-4"}]
+    [:button {:class "pure-button pure-button-primary pure-u-1 pure-u-md-1-4"
+              :on-click load-input-sequence}
+     "Load Sequence"]]])
 
 ;---------------------;
 ; Load tree component ;
@@ -110,19 +99,27 @@ and some buttons for interaction."
 (defn tree-input-component []
   [:div
    [:h2 "Input (qtree string)"]
-   [:textarea {:value (db/get-input-tree-str)
-               :size (+ (count (db/get-input-tree-str)) 2)
-               :style {:width 520}
-               :on-change #(db/set-input-tree-str (-> % .-target .-value))}]
-   [:div
-    [:label
+   [:div {:class "pure-form pure-g"}
+    [:textarea {:class "pure-input-1"
+                :value (db/get-input-tree-str)
+                :on-change #(db/set-input-tree-str (-> % .-target .-value))
+                :on-key-down (fn [ev]
+                               (when (= (.-key ev) "Enter")
+                                 (db/load-tree-string)
+                                 (db/toggle-io!)
+                                 false))}]
+    [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
      [:input
       {:type "checkbox"
        :checked (db/strip-math?)
        :on-change db/toggle-strip-math!}]
-     "strip math"
+     " strip math"
      ]
-    [:button {:on-click db/load-tree-string} "Load QTree String"]]])
+    [:div {:class "pure-u-1 pure-u-md-1-2"}]
+    [:button {:class "pure-button pure-button-primary pure-u-1 pure-u-md-1-4"
+              :on-click #(do (db/load-tree-string)
+                             (db/toggle-io!))}
+     "Load QTree String"]]])
 
 ;------------------;
 ; Output component ;
@@ -141,25 +138,41 @@ and some buttons for interaction."
   (let [out-str (db/get-output-str)]
     [:div
      [:h2 "Output (qtree string)"]
-     [:textarea {:value out-str
-                 :style {:width 520}
-                 :readonly "readonly"}]
-     [:div
-      [:label
+     [:div {:class "pure-form pure-g"}
+      [:textarea {:value out-str
+                  :class "pure-input-1"
+                  :readOnly "true"}]
+      [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
        [:input
         {:type "checkbox"
          :checked (db/math-inner?)
          :on-change db/toggle-math-inner!}]
-       "$ inner nodes"]
-      [:label
+       " math inner nodes"]
+      [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
        [:input
         {:type "checkbox"
          :checked (db/math-leaves?)
          :on-change db/toggle-math-leaves!}]
-       "$ leaf nodes"]
+       " math leaf nodes"]
+      [:div {:class "pure-u-1 pure-u-md-1-4"}]
       [:button
-       {:on-click #(copy-to-clipboard out-str)}
+       {:class "pure-button pure-u-1 pure-u-md-1-4" :on-click #(copy-to-clipboard out-str)}
        "Copy to Clipboard"]]]))
+
+;--------------;
+; IO component ;
+;--------------;
+
+(defn io-component []
+  [:div
+   (when (db/show-io?)
+     [:div
+      [sequence-input-component]
+      [tree-input-component]
+      [output-component]])
+   [:a {:on-click db/toggle-io! :href "javascript:void(0)"} ; void() is used as a dummy href
+    (if (db/show-io?) "Hide IO Section" "Show IO Section")]])
+
 
 ;------------------;
 ; Manual component ;
@@ -210,9 +223,9 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 (defn manual-component []
   [:div
    (when (db/show-manual?)
-     [:div {:style {:max-width 600 :border-style "solid" :padding 20}}
+     [:div {:class "manual"}
       (md/md->hiccup manual-string)])
-   [:button {:on-click db/toggle-manual}
+   [:a {:on-click db/toggle-manual! :href "javascript:void(0)"} ; void() is used as a dummy href
     (if (db/show-manual?) "Hide Manual" "Show Manual")]]
   )
 
@@ -221,16 +234,15 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 ;---------------;
 
 (defn app-component []
-  [:div {:style {:font-family "Helvetica Neue"}}
-   [:h1 "Tree Annotation"]
-   [manual-component]
-   [sequence-input-component]
-   [tree-input-component]
-   [output-component]
+  [:div
+   [:div {:class "content"}
+    [:h1 "Tree Annotation"]
+    [manual-component]
+    [io-component]]
    [tree-annotation-component]])
 
 (defn render []
-  (r/render [app-component] (.-body js/document)))
+  (r/render [app-component] (js/document.getElementById "app")))
 
 (render)
 
@@ -240,8 +252,12 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 
 (set! (.-onkeydown js/document)
       (fn [event]
-        (case (.-code event)
-          "Enter" (db/combine-selected)
-          "Escape" (db/deselect-all)
-          "Backspace" (db/delete-selected)
-          "Delete" (db/delete-selected))))
+        ;; check whether event was fired on element (e.g. text field)
+        ;; or globally (target == document body)
+        (when (identical? (.-target event) (.-body js/document))
+          (case (.-code event)
+            "Enter" (db/combine-selected)
+            "Escape" (db/deselect-all)
+            "Backspace" (db/delete-selected)
+            "Delete" (db/delete-selected)
+            nil))))
