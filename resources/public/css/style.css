@@ -86,10 +86,10 @@ input.node {
     z-index: -1;
 }
 
-.node.selected {
+div.node.selected {
     background-color: #8e0;
 }
 
-.node.tree-selected {
+div.node.tree-selected {
     background-color: #88e;
 }

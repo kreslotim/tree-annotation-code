@@ -11,8 +11,8 @@
 ;----------------;
 
 (defn selection-class [node]
-  "Returns a string of CSS classes to add to a node's class attribute
-   based on the node's selection status."
+  "Returns a string of CSS helper classes to add to a node's class attribute
+   indicating the node's selection status."
   (cond (:selected node) " selected"
         (db/tree-selected? node) " tree-selected"
         true ""))
