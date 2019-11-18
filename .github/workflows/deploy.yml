@@ -18,7 +18,8 @@ jobs:
     - name: Compile
       run: |
         clojure -Amin
-        cp target/public/cljs-out/prod-main.js resources/public/dev-main.js
+        mkdir resources/public/cljs-out
+        cp target/public/cljs-out/prod-main.js resources/public/cljs-out/dev-main.js
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v2.5.1
       env:
