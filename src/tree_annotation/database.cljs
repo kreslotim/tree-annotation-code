@@ -55,28 +55,26 @@
   "Converts `node` into a qtree string.
 `math-inner` and `math-leaves` are booleans that indicate whether labels
 of inner and leaf nodes should be enclosed in $s, respecively."
-  (let [children (:children node)
-        label    (:label node)
-        math     (or (and (leaf? node) math-leaves)
-                     (and (not (leaf? node)) math-inner))
-        wrap     (fn [label] (cond
-                                math (str "$" label "$")
-                                (re-find #"\s" label) (str "{" label "}")
-                                :else label))]
+  (let [children   (:children node)
+        child-strs (map (partial tree-str math-inner math-leaves) children)
+        label      (:label node)
+        math       (or (and (leaf? node) math-leaves)
+                       (and (not (leaf? node)) math-inner))
+        wrap       (fn [label] (cond
+                                 math (str "$" label "$")
+                                 (re-find #"\s" label) (str "{" label "}")
+                                 :else label))]
     (if (empty? children) ; if the node is a leaf
-      (str (wrap label) " ")
-      (apply str
-             (concat ["[." (wrap label) " "]
-                     (map (partial tree-str math-inner math-leaves) children)
-                     ["] "])))))
+      (wrap label)
+      (str "[." (wrap label) " " (str/join " " child-strs) "]"))))
 
 (defn get-output-str []
   "Returns the qtree string representation of the forest."
   (let [db @db
         math-inner (:math-inner db)
         math-leaves (:math-leaves db)]
-    (apply str (map (partial tree-str math-inner math-leaves)
-                    (:forest db)))))
+    (str/join "\n" (map (partial tree-str math-inner math-leaves)
+                        (:forest db)))))
 
 (defn math-inner? []
   (:math-inner @db))
