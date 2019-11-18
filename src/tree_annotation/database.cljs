@@ -102,7 +102,6 @@ of inner and leaf nodes should be enclosed in $s, respecively."
    :renaming false
    :label ""
    :children []
-   :x 0 :y 0
    :width 1})
 
 (defn leaf? [node]
@@ -138,16 +137,15 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 (defn get-forest []
   (:forest @db))
 
-(defn make-leaf [label x]
-  "Returns a leaf node with label `label` and x coordinate `x`."
+(defn make-leaf [label]
+  "Returns a leaf node with label `label`."
   (assoc default-node
          :label label
-         :x x :y 0
          :width 1))
 
 (defn set-leaves [leaves]
   "Replaces the forest with a list of unconnected leaves."
-  (swap! db assoc :forest (mapv make-leaf leaves (range (count leaves)))))
+  (swap! db assoc :forest (mapv make-leaf leaves)))
 
 ;; selection
 ;; ---------
@@ -181,19 +179,6 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 ;; rename
 ;; ------
 
-;; (defn rename-selected-nodes [node label]
-;;   (assoc node
-;;          :children (mapv rename-selected-nodes (:children node))
-;;          :label (if (:selected node)
-;;                   label
-;;                   (:label node))))
-
-;; (defn rename-selected [forest label]
-;;   (mapv (fn [node] (rename-selected-nodes node label)) forest))
-
-;; (defn rename-selected! [label]
-;;   (swap! db update :forest #(rename-selected % label)))
-
 (defn rename-node [label index]
   "Assings the label `label` to the node at `index`.
    `index` represents the path to a node as a sequence of child indices."
@@ -226,8 +211,6 @@ of inner and leaf nodes should be enclosed in $s, respecively."
            :selected true
            :label label
            :children (deselect-all-trees children)
-           :x (:x (first children))
-           :y (inc (reduce max (map :y children)))
            :width (reduce + (map :width children)))))
 
 (defn combine-selected-trees
@@ -282,29 +265,6 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 ;; parse
 ;; -----
 
-;; (declare recalc-coords)
-
-;; (defn recalc-coords-tree [node offset]
-;;   "Recalculate the coordinates in a tree with x offset `offset`."
-;;   (let [[children' offset-children] (recalc-coords (:children node) offset)
-;;         offset' (if (leaf? node) (inc offset-children) offset-children)
-;;         node' (assoc node
-;;                      :children children'
-;;                      :x offset
-;;                      :y (inc (reduce max 0 (map :y children')))
-;;                      :width (- offset' offset))]
-;;     [node' offset']))
-
-;; (defn recalc-coords [forest offset]
-;;   "Recalculates the coordinates in a `forest` with x offset `offset`."
-;;   (if (empty? forest)
-;;     [[] offset]
-;;     (let [tree (first forest)
-;;           tail (rest forest)
-;;           [tree' offset-children] (recalc-coords-tree tree offset)
-;;           [tail' offset-tail] (recalc-coords tail offset-children)]
-;;       [(into [tree'] tail') offset-tail])))
-
 (defparser qtree-parser "
   forest   = node*
   node     = (label | <'[.'> label children <']'>) <#'\\s*'>
@@ -334,7 +294,7 @@ If `strip-math` is `true`, math labels will not have $s."
       "empty")))
 
 (defn tree-from-parse [strip-math parse]
-  "Converts a parse of a tree into a tree representation without coordinates."
+  "Converts a parse of a tree into a tree representation."
   (let [label (parse-label strip-math (nth parse 1 "empty"))
         children (vec (rest (nth parse 2 [])))]
     (assoc default-node
