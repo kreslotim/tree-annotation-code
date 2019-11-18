@@ -19,3 +19,9 @@ jobs:
       run: |
         clojure -Amin
         cp target/public/cljs-out/prod-main.js resources/public/dev-main.js
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v2.5.1
+      env:
+        ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        PUBLISH_BRANCH: gh-pages
+        PUBLISH_DIR: ./resources/public
