@@ -270,7 +270,7 @@ of inner and leaf nodes should be enclosed in $s, respecively."
   label    = (group | math | string) <#'\\s*'>
   group    = <'{'> #'[^{}]*' (group #'[^{}]*')* <'}'>
   math     = <'$'> #'[^$\\[\\]. ]+' <'$'>
-  string   = #'\\w+'
+  string   = #'\\S+'
 ")
 
 (defn parse-group [group]
