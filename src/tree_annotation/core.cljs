@@ -26,6 +26,7 @@
       :type "text"
       :value (:label node)
       :on-change #(db/rename-node (-> % .-target .-value) index)
+      :on-focus #(-> % .-target .select)
       :on-key-down (fn [ev]
                      (when (= (.-key ev) "Enter")
                        (db/stop-renaming-node index)))}]
