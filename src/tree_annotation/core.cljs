@@ -261,7 +261,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
     [:h1 "Tree Annotation"]
     [manual-component]
     [io-component]]
-   [tree-annotation-component]])
+   [tree-annotation-component]
+   [:div.bottom-whitespace]])
 
 (defn render []
   (rdom/render [app-component] (js/document.getElementById "app")))
