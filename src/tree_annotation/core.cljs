@@ -237,6 +237,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
   deletes all selected nodes and their ancestors.
   Only inner nodes or the last leaf node can be deleted.
 - Pressing `Esc` (or clicking the `Deselect All` button) deselects all nodes.
+- Pressing `i` shows or hides the IO section.
+  Pressing `m` or `?` shows or hides the manual section.
 - You can also edit an existing qtree string by loading it 
   using the *load qtree string* button.
 
@@ -278,9 +280,12 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
         ;; check whether event was fired on element (e.g. text field)
         ;; or globally (target == document body)
         (when (identical? (.-target event) (.-body js/document))
-          (case (.-code event)
+          (case (.-key event)
             "Enter" (db/combine-selected)
             "Escape" (db/deselect-all)
             "Backspace" (db/delete-selected)
             "Delete" (db/delete-selected)
+            "i" (db/toggle-io!)
+            "?" (db/toggle-manual!)
+            "m" (db/toggle-manual!)
             nil))))
