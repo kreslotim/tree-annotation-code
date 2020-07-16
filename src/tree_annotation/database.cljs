@@ -269,8 +269,8 @@ of inner and leaf nodes should be enclosed in $s, respecively."
   children = node+
   label    = (group | math | string) <#'\\s*'>
   group    = <'{'> #'[^{}]*' (group #'[^{}]*')* <'}'>
-  math     = <'$'> #'[^$\\[\\]. ]+' <'$'>
-  string   = #'\\S+'
+  math     = <'$'> #'[^\\$\\[\\]]+' <'$'>
+  string   = #'[^\\s{\\[\\$]+'
 ")
 
 (defn parse-group [group]
