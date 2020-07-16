@@ -1,5 +1,6 @@
 (ns tree-annotation.core
   (:require [reagent.core :as r]
+            [reagent.dom :as rdom]
             [clojure.string :as str]
             [clojure.pprint :as pp]
             [markdown-to-hiccup.core :as md]
@@ -242,7 +243,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
    [tree-annotation-component]])
 
 (defn render []
-  (r/render [app-component] (js/document.getElementById "app")))
+  (rdom/render [app-component] (js/document.getElementById "app")))
 
 (render)
 
