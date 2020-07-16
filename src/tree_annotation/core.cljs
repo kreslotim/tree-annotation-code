@@ -14,23 +14,23 @@
 (defn selection-class [node]
   "Returns a string of CSS helper classes to add to a node's class attribute
    indicating the node's selection status."
-  (cond (:selected node) " selected"
-        (db/tree-selected? node) " tree-selected"
+  (cond (:selected node) "selected"
+        (db/tree-selected? node) "tree-selected"
         true ""))
 
 (defn node-component [node index]
   "Create a component (a button or text field) from a node."
   (if (:renaming node)
-    [:input {:auto-focus true
-             :type "text"
-             :class "node"
-             :value (:label node)
-             :on-change #(db/rename-node (-> % .-target .-value) index)
-             :on-key-down (fn [ev]
-                            (when (= (.-key ev) "Enter")
-                              (db/stop-renaming-node index)))}]
-    [:div
-     {:class (str "node" (selection-class node))
+    [:input.node
+     {:auto-focus true
+      :type "text"
+      :value (:label node)
+      :on-change #(db/rename-node (-> % .-target .-value) index)
+      :on-key-down (fn [ev]
+                     (when (= (.-key ev) "Enter")
+                       (db/stop-renaming-node index)))}]
+    [:div.node
+     {:class (selection-class node)
       :on-click #(db/toggle-select! index)
       :on-double-click #(db/start-renaming-node index)}
      (:label node)]))
@@ -43,8 +43,8 @@
   (let [children (:children node)
         length (count children)
         component (node-component node index)]
-    [:div {:class "subtree"}
-     (into [:div {:class "forest children"}]
+    [:div.subtree
+     (into [:div.forest.children]
            (mapv (fn [child i] (tree-component child (conj index i)))
                  children
                  (range length)))
@@ -54,14 +54,18 @@
   "Creates a set of components corresponding to the nodes in the database
 and some buttons for interaction."
   [:div
-   [:div {:class "content"}
+   [:div.content
     [:h2 "Annotation"]
-    [:div {:class "pure-button-group controls" :role "group"}
-     [:button {:class "pure-button" :on-click db/combine-selected} "Combine"]
-     [:button {:class "pure-button" :on-click db/deselect-all} "Deselect All"]
-     [:button {:class "pure-button button-delete" :on-click db/delete-selected} "Delete"]]]
+    [:div.pure-button-group.controls
+     {:role "group"}
+     [:button.pure-button
+      {:on-click db/combine-selected} "Combine"]
+     [:button.pure-button
+      {:on-click db/deselect-all} "Deselect All"]
+     [:button.pure-button.button-delete
+      {:on-click db/delete-selected} "Delete"]]]
    (into
-    [:div {:class "tree forest"}]
+    [:div.tree.forest]
     (let [forest (db/get-forest)
           length (count forest)]
       (mapv (fn [tree i] (tree-component tree [i]))
@@ -81,16 +85,16 @@ and some buttons for interaction."
 (defn sequence-input-component []
   [:div
    [:h2 "Input (list of leaves)"]
-   [:div {:class "pure-form pure-g"}
-    [:textarea {:class "pure-input-1"
-                :value (db/get-input-str)
-                :on-change #(db/set-input-str (-> % .-target .-value))
-                :on-key-down (fn [ev]
-                                (when (= (.-key ev) "Enter")
-                                  (load-input-sequence)))}]
-    [:div {:class "pure-u-1 pure-u-md-3-4"}]
-    [:button {:class "pure-button pure-button-primary pure-u-1 pure-u-md-1-4"
-              :on-click load-input-sequence}
+   [:div.pure-form.pure-g
+    [:textarea.pure-input-1
+     {:value (db/get-input-str)
+      :on-change #(db/set-input-str (-> % .-target .-value))
+      :on-key-down (fn [ev]
+                     (when (= (.-key ev) "Enter")
+                       (load-input-sequence)))}]
+    [:div.pure-u-1.pure-u-md-3-4]
+    [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
+     {:on-click load-input-sequence}
      "Load Sequence"]]])
 
 ;---------------------;
@@ -100,26 +104,26 @@ and some buttons for interaction."
 (defn tree-input-component []
   [:div
    [:h2 "Input (qtree string)"]
-   [:div {:class "pure-form pure-g"}
-    [:textarea {:class "pure-input-1"
-                :value (db/get-input-tree-str)
-                :on-change #(db/set-input-tree-str (-> % .-target .-value))
-                :on-key-down (fn [ev]
-                               (when (= (.-key ev) "Enter")
-                                 (db/load-tree-string)
-                                 (db/toggle-io!)
-                                 false))}]
-    [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
+   [:div.pure-form.pure-g
+    [:textarea.pure-input-1
+     {:value (db/get-input-tree-str)
+      :on-change #(db/set-input-tree-str (-> % .-target .-value))
+      :on-key-down (fn [ev]
+                     (when (= (.-key ev) "Enter")
+                       (db/load-tree-string)
+                       (db/toggle-io!)
+                       false))}]
+    [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
      [:input
       {:type "checkbox"
        :checked (db/strip-math?)
        :on-change db/toggle-strip-math!}]
      " strip math"
      ]
-    [:div {:class "pure-u-1 pure-u-md-1-2"}]
-    [:button {:class "pure-button pure-button-primary pure-u-1 pure-u-md-1-4"
-              :on-click #(do (db/load-tree-string)
-                             (db/toggle-io!))}
+    [:div.pure-u-1.pure-u-md-1-2]
+    [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
+     {:on-click #(do (db/load-tree-string)
+                     (db/toggle-io!))}
      "Load QTree String"]]])
 
 ;------------------;
@@ -136,28 +140,44 @@ and some buttons for interaction."
     (.removeChild js/document.body el)))
 
 (defn output-component []
-  (let [out-str (db/get-output-str)]
+  (let [out-str-qtree (db/get-output-str-qtree)
+        out-str-json (db/get-output-str-json)
+        ]
     [:div
-     [:h2 "Output (qtree string)"]
-     [:div {:class "pure-form pure-g"}
-      [:textarea {:value out-str
-                  :class "pure-input-1"
-                  :readOnly "true"}]
-      [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
+     [:h2 "Output"]
+     [:div.pure-form.pure-g
+      [:h3.pure-u-1 "qtree String"]
+      [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
        [:input
         {:type "checkbox"
          :checked (db/math-inner?)
          :on-change db/toggle-math-inner!}]
        " math inner nodes"]
-      [:label {:class "pure-u-1 pure-u-md-1-4 pure-checkbox"}
+      [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
        [:input
         {:type "checkbox"
          :checked (db/math-leaves?)
          :on-change db/toggle-math-leaves!}]
        " math leaf nodes"]
-      [:div {:class "pure-u-1 pure-u-md-1-4"}]
-      [:button
-       {:class "pure-button pure-u-1 pure-u-md-1-4" :on-click #(copy-to-clipboard out-str)}
+      [:div.pure-u-1.pure-u-md-1-4]
+      [:textarea.pure-input-1.output
+       {:value out-str-qtree
+        :readOnly "true"}]
+      [:button.pure-button.pure-u-1.pure-u-md-1-4
+       {:on-click #(copy-to-clipboard out-str-qtree)}
+       "Copy to Clipboard"]
+      [:h3.pure-u-1 "JSON String"]
+      [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
+       [:input
+        {:type "checkbox"
+         :checked (db/pretty-print-json?)
+         :on-change db/toggle-pretty-print-json!}]
+       " pretty print"]
+      [:textarea.pure-input-1.output
+       {:value out-str-json
+        :readOnly "true"}]
+      [:button.pure-button.pure-u-1.pure-u-md-1-4
+       {:on-click #(copy-to-clipboard out-str-json)}
        "Copy to Clipboard"]]]))
 
 ;--------------;
@@ -224,7 +244,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 (defn manual-component []
   [:div
    (when (db/show-manual?)
-     [:div {:class "manual"}
+     [:div.manual
       (md/md->hiccup manual-string)])
    [:a {:on-click db/toggle-manual! :href "javascript:void(0)"} ; void() is used as a dummy href
     (if (db/show-manual?) "Hide Manual" "Show Manual")]]
@@ -236,7 +256,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 
 (defn app-component []
   [:div
-   [:div {:class "content"}
+   [:div.content
     [:h1 "Tree Annotation"]
     [manual-component]
     [io-component]]

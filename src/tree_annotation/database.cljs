@@ -9,14 +9,15 @@
 
 ; private annotation does currently not work in clojure script
 (defonce ^:private db (r/atom 
-  {:input-str      "Dm G7 C"
-   :input-tree-str "[.$C$ [.$G7$ $Dm$ $G7$ ] $C$ ] "
-   :math-inner     true
-   :math-leaves    true
-   :strip-math     true
-   :forest         []
-   :show-manual    true
-   :show-io        true
+  {:input-str         "Dm G7 C"
+   :input-tree-str    "[.$C$ [.$G7$ $Dm$ $G7$ ] $C$ ] "
+   :math-inner        true
+   :math-leaves       true
+   :pretty-print-json false
+   :strip-math        true
+   :forest            []
+   :show-manual       true
+   :show-io           true
   }))
 
 ;-----------------------;
@@ -51,12 +52,12 @@
 
 (declare leaf?)
 
-(defn tree-str [math-inner math-leaves node]
+(defn qtree-str [math-inner math-leaves node]
   "Converts `node` into a qtree string.
 `math-inner` and `math-leaves` are booleans that indicate whether labels
 of inner and leaf nodes should be enclosed in $s, respecively."
   (let [children   (:children node)
-        child-strs (map (partial tree-str math-inner math-leaves) children)
+        child-strs (map (partial qtree-str math-inner math-leaves) children)
         label      (:label node)
         math       (or (and (leaf? node) math-leaves)
                        (and (not (leaf? node)) math-inner))
@@ -68,13 +69,26 @@ of inner and leaf nodes should be enclosed in $s, respecively."
       (wrap label)
       (str "[." (wrap label) " " (str/join " " child-strs) "]"))))
 
-(defn get-output-str []
+(defn get-output-str-qtree []
   "Returns the qtree string representation of the forest."
   (let [db @db
         math-inner (:math-inner db)
         math-leaves (:math-leaves db)]
-    (str/join "\n" (map (partial tree-str math-inner math-leaves)
+    (str/join "\n" (map (partial qtree-str math-inner math-leaves)
                         (:forest db)))))
+
+(defn tree-json [node]
+  "Converts `node` into a json-like exportable object"
+  (let [children (:children node)
+        label (:label node)]
+    {:label label
+     :children (mapv tree-json children)}))
+
+(defn get-output-str-json []
+  (let [db @db
+        forest (:forest db)
+        indent (if (:pretty-print-json db) 2 0)]
+    (str/join "\n\n" (map #(.stringify js/JSON (clj->js (tree-json %)) nil indent) forest))))
 
 (defn math-inner? []
   (:math-inner @db))
@@ -82,11 +96,17 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 (defn math-leaves? []
   (:math-leaves @db))
 
+(defn pretty-print-json? []
+  (:pretty-print-json @db))
+
 (defn toggle-math-inner! []
   (swap! db update :math-inner not))
 
 (defn toggle-math-leaves! []
   (swap! db update :math-leaves not))
+
+(defn toggle-pretty-print-json! []
+  (swap! db update :pretty-print-json not))
 
 ;-----------------;
 ; Forest requests ;
