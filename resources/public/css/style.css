@@ -89,6 +89,9 @@ div.node {
 
 input.node {
     z-index: -1;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 10em;
 }
 
 div.node.selected {
