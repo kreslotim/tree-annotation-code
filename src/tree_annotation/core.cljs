@@ -233,6 +233,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 
 - Double clicking on a node opens a text field to rename that node.
   Submit the new name by pressing `Enter`.
+  Pressing `e` or `r` opens a text field for every selected node.
 - Pressing `Delete` or `Backspace` (or clicking the `Delete` button)
   deletes all selected nodes and their ancestors.
   Only inner nodes or the last leaf node can be deleted.
@@ -250,8 +251,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
      [:div.manual
       (md/md->hiccup manual-string)])
    [:a {:on-click db/toggle-manual! :href "javascript:void(0)"} ; void() is used as a dummy href
-    (if (db/show-manual?) "Hide Manual" "Show Manual")]]
-  )
+    (if (db/show-manual?) "Hide Manual" "Show Manual")]])
 
 ;---------------;
 ; App component ;
@@ -288,4 +288,9 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
             "i" (db/toggle-io!)
             "?" (db/toggle-manual!)
             "m" (db/toggle-manual!)
-            nil))))
+            "e" (db/start-renaming-selected)
+            "r" (db/start-renaming-selected)
+            nil)
+          (.preventDefault event)
+          (.stopPropagation event)
+          false)))

@@ -219,6 +219,15 @@ of inner and leaf nodes should be enclosed in $s, respecively."
                         :selected true))]
     (swap! db update :forest update-forest stop-renaming index)))
 
+(defn start-renaming-selected []
+  "Puts all selected nodes in renaming mode."
+  (letfn [(start-renaming-if-selected [node]
+            (assoc node
+                   :renaming (:selected node)
+                   :selected false
+                   :children (mapv start-renaming-if-selected (:children node))))]
+    (swap! db update :forest #(mapv start-renaming-if-selected %))))
+
 ;; combine
 ;; -------
 
