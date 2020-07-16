@@ -67,7 +67,7 @@ of inner and leaf nodes should be enclosed in $s, respecively."
                                  :else label))]
     (if (empty? children) ; if the node is a leaf
       (wrap label)
-      (str "[." (wrap label) " " (str/join " " child-strs) "]"))))
+      (str "[." (wrap label) " " (str/join " " child-strs) " ]"))))
 
 (defn get-output-str-qtree []
   "Returns the qtree string representation of the forest."
