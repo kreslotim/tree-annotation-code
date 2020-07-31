@@ -16,6 +16,19 @@ html, button, input, select, textarea,
     max-width: 768px;
 }
 
+.pure-menu-selected {
+    background: #eee;
+}
+
+.tab {
+    background: #eee;
+    padding: 1em;
+}
+
+/* .tab h2 { */
+/*     display: inline-block; */
+/* } */
+
 .alert {
     background: orange;
     color: white;
@@ -34,9 +47,10 @@ html, button, input, select, textarea,
 }
 
 code {
-    background: #eee;
-    padding: 2px;
-    border-radius: 2px;
+    background: #ccc;
+    border: 1px solid #555;
+    padding: 0 2px;
+    border-radius: 4px;
 }
 
 .button-delete {
