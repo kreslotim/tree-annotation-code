@@ -147,7 +147,7 @@ and some buttons for interaction."
       [sequence-input-component]
       [tree-input-component]
       ])
-   [:a {:on-click db/toggle-input! :href "javascript:void(0)"} ; void() is used as a dummy href
+   #_[:a {:on-click db/toggle-input! :href "javascript:void(0)"} ; void() is used as a dummy href
        (if (db/show-input?) "Hide Input" "Show Input")]])
 
 ;------------------;
@@ -209,11 +209,11 @@ and some buttons for interaction."
    (when (db/show-output?)
      [:div
       [:h2 "Output"]
-      (when (not= (count (db/get-forest)) 1)
+      (when (> (count (db/get-forest)) 1)
         [:div.alert "Warning: tree is incomplete!"])
       [qtree-output-component]
       [json-output-component]])
-   [:a {:on-click db/toggle-output! :href "javascript:void(0)"} ; void() is used as a dummy href
+   #_[:button.pure-button {:on-click db/toggle-output!} ; void() is used as a dummy href
        (if (db/show-output?) "Hide Output" "Show Output")]])
 
 ;------------------;
@@ -270,22 +270,41 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
    (when (db/show-manual?)
      [:div.manual
       (md/md->hiccup manual-string)])
-   [:a {:on-click db/toggle-manual! :href "javascript:void(0)"} ; void() is used as a dummy href
+   #_[:a {:on-click db/toggle-manual! :href "javascript:void(0)"} ; void() is used as a dummy href
     (if (db/show-manual?) "Hide Manual" "Show Manual")]])
 
 ;---------------;
 ; App component ;
 ;---------------;
 
+(defn tab-component []
+  [:div.pure-menu.pure-menu-horizontal
+   [:ul.pure-menu-list
+    [:li.pure-menu-item
+     {:class (if (db/show-input?) "pure-menu-selected" "")}
+     [:a.pure-menu-link
+      {:on-click db/toggle-input! :href "javascript:;"}
+      "Input"]]
+    [:li.pure-menu-item
+     {:class (if (db/show-output?) "pure-menu-selected" "")}
+     [:a.pure-menu-link
+      {:on-click db/toggle-output! :href "javascript:;"}
+      "Output"]]
+    [:li.pure-menu-item
+     {:class (if (db/show-manual?) "pure-menu-selected" "")}
+     [:a.pure-menu-link
+      {:on-click db/toggle-manual! :href "javascript:;"}
+      "Help"]]]])
+
 (defn app-component []
   [:div
    [:div.content
     [:h1 "Tree Annotation"]
+    [tab-component]
     [manual-component]
-    [input-component]]
-   [tree-annotation-component]
-   [:div.content
+    [input-component]
     [output-component]]
+   [tree-annotation-component]
    [:div.bottom-whitespace]])
 
 (defn render []
