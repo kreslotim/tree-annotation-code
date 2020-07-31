@@ -100,7 +100,7 @@ and some buttons for interaction."
 
 (defn tree-input-component []
   [:div
-   [:h3 "qtree String"]
+   [:h3 "QTree String"]
    [:div.pure-form.pure-g
     [:textarea.pure-input-1
      {:value (db/get-input-qtree-str)
@@ -142,8 +142,8 @@ and some buttons for interaction."
 (defn input-component []
   [:div
    (when (db/show-input?)
-     [:div
-      [:h2 "Input"]
+     [:div.tab
+      ;;[:h2 "Input"]
       [sequence-input-component]
       [tree-input-component]
       ])
@@ -166,26 +166,27 @@ and some buttons for interaction."
 (defn qtree-output-component []
   (let [out-str-qtree (db/get-output-str-qtree)]
     [:div.pure-form.pure-g
-     [:h3.pure-u-1 "qtree String"]
-      [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
-       [:input
-        {:type "checkbox"
-         :checked (db/math-inner?)
-         :on-change db/toggle-math-inner!}]
-       " math inner nodes"]
-      [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
-       [:input
-        {:type "checkbox"
-         :checked (db/math-leaves?)
-         :on-change db/toggle-math-leaves!}]
-       " math leaf nodes"]
-      [:div.pure-u-1.pure-u-md-1-4]
-      [:textarea.pure-input-1.output
-       {:value out-str-qtree
-        :readOnly "true"}]
-      [:button.pure-button.pure-u-1.pure-u-md-1-4
-       {:on-click #(copy-to-clipboard out-str-qtree)}
-       "Copy to Clipboard"]]))
+     [:h3.pure-u-1 "QTree String"]
+     [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
+      [:input
+       {:type "checkbox"
+        :checked (db/math-inner?)
+        :on-change db/toggle-math-inner!}]
+      " math inner nodes"]
+     [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
+      [:input
+       {:type "checkbox"
+        :checked (db/math-leaves?)
+        :on-change db/toggle-math-leaves!}]
+      " math leaf nodes"]
+     [:div.pure-u-1.pure-u-md-1-4]
+     [:textarea.pure-input-1.output
+      {:value out-str-qtree
+       :readOnly "true"}]
+     [:div.pure-u-1.pure-u-md-3-4]
+     [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
+      {:on-click #(copy-to-clipboard out-str-qtree)}
+      "Copy to Clipboard"]]))
 
 (defn json-output-component []
   (let [out-str-json (db/get-output-str-json)]
@@ -200,15 +201,16 @@ and some buttons for interaction."
      [:textarea.pure-input-1.output
       {:value out-str-json
        :readOnly "true"}]
-     [:button.pure-button.pure-u-1.pure-u-md-1-4
+     [:div.pure-u-1.pure-u-md-3-4]
+     [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
       {:on-click #(copy-to-clipboard out-str-json)}
       "Copy to Clipboard"]]))
 
 (defn output-component []
   [:div
    (when (db/show-output?)
-     [:div
-      [:h2 "Output"]
+     [:div.tab
+      ;;[:h2 "Output"]
       (when (> (count (db/get-forest)) 1)
         [:div.alert "Warning: tree is incomplete!"])
       [qtree-output-component]
@@ -268,7 +270,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 (defn manual-component []
   [:div
    (when (db/show-manual?)
-     [:div.manual
+     [:div.manual.tab
       (md/md->hiccup manual-string)])
    #_[:a {:on-click db/toggle-manual! :href "javascript:void(0)"} ; void() is used as a dummy href
     (if (db/show-manual?) "Hide Manual" "Show Manual")]])
