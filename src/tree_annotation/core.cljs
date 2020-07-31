@@ -81,11 +81,11 @@ and some buttons for interaction."
   "Create leaf nodes from an input string which is split on spaces."
   (let [labels (str/split (db/get-input-str) #" ")]
     (db/set-leaves labels)
-    (db/toggle-io!)))
+    (db/toggle-input!)))
 
 (defn sequence-input-component []
   [:div
-   [:h2 "Input (list of leaves)"]
+   [:h3 "List of Leaves"]
    [:div.pure-form.pure-g
     [:textarea.pure-input-1
      {:value (db/get-input-str)
@@ -98,13 +98,9 @@ and some buttons for interaction."
      {:on-click load-input-sequence}
      "Load Sequence"]]])
 
-;---------------------;
-; Load tree component ;
-;---------------------;
-
 (defn tree-input-component []
   [:div
-   [:h2 "Input (qtree string)"]
+   [:h3 "qtree String"]
    [:div.pure-form.pure-g
     [:textarea.pure-input-1
      {:value (db/get-input-qtree-str)
@@ -112,7 +108,7 @@ and some buttons for interaction."
       :on-key-down (fn [ev]
                      (when (= (.-key ev) "Enter")
                        (db/load-qtree-string)
-                       (db/toggle-io!)
+                       (db/toggle-input!)
                        false))}]
     [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
      [:input
@@ -124,9 +120,9 @@ and some buttons for interaction."
     [:div.pure-u-1.pure-u-md-1-2]
     [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
      {:on-click #(do (db/load-qtree-string)
-                     (db/toggle-io!))}
+                     (db/toggle-input!))}
      "Load QTree String"]]
-   [:h2 "Input (JSON)"]
+   [:h3 "JSON"]
    [:div.pure-form.pure-g
     [:textarea.pure-input-1
      {:value (db/get-input-json-str)
@@ -134,14 +130,25 @@ and some buttons for interaction."
       :on-key-down (fn [ev]
                      (when (= (.-key ev) "Enter")
                        (db/load-json-string)
-                       (db/toggle-io!)
+                       (db/toggle-input!)
                        false))}]
     [:div.pure-u-1.pure-u-md-3-4]
     [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
      {:on-click #(do (db/load-json-string)
-                     (db/toggle-io!))}
+                     (db/toggle-input!))}
      "Load JSON String"]]
    ])
+
+(defn input-component []
+  [:div
+   (when (db/show-input?)
+     [:div
+      [:h2 "Input"]
+      [sequence-input-component]
+      [tree-input-component]
+      ])
+   [:a {:on-click db/toggle-input! :href "javascript:void(0)"} ; void() is used as a dummy href
+       (if (db/show-input?) "Hide Input" "Show Input")]])
 
 ;------------------;
 ; Output component ;
@@ -156,14 +163,10 @@ and some buttons for interaction."
     (js/document.execCommand "copy")
     (.removeChild js/document.body el)))
 
-(defn output-component []
-  (let [out-str-qtree (db/get-output-str-qtree)
-        out-str-json (db/get-output-str-json)
-        ]
-    [:div
-     [:h2 "Output"]
-     [:div.pure-form.pure-g
-      [:h3.pure-u-1 "qtree String"]
+(defn qtree-output-component []
+  (let [out-str-qtree (db/get-output-str-qtree)]
+    [:div.pure-form.pure-g
+     [:h3.pure-u-1 "qtree String"]
       [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
        [:input
         {:type "checkbox"
@@ -182,35 +185,36 @@ and some buttons for interaction."
         :readOnly "true"}]
       [:button.pure-button.pure-u-1.pure-u-md-1-4
        {:on-click #(copy-to-clipboard out-str-qtree)}
-       "Copy to Clipboard"]
-      [:h3.pure-u-1 "JSON String"]
-      [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
-       [:input
-        {:type "checkbox"
-         :checked (db/pretty-print-json?)
-         :on-change db/toggle-pretty-print-json!}]
-       " pretty print"]
-      [:textarea.pure-input-1.output
-       {:value out-str-json
-        :readOnly "true"}]
-      [:button.pure-button.pure-u-1.pure-u-md-1-4
-       {:on-click #(copy-to-clipboard out-str-json)}
-       "Copy to Clipboard"]]]))
+       "Copy to Clipboard"]]))
 
-;--------------;
-; IO component ;
-;--------------;
+(defn json-output-component []
+  (let [out-str-json (db/get-output-str-json)]
+    [:div.pure-form.pure-g
+     [:h3.pure-u-1 "JSON String"]
+     [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
+      [:input
+       {:type "checkbox"
+        :checked (db/pretty-print-json?)
+        :on-change db/toggle-pretty-print-json!}]
+      " pretty print"]
+     [:textarea.pure-input-1.output
+      {:value out-str-json
+       :readOnly "true"}]
+     [:button.pure-button.pure-u-1.pure-u-md-1-4
+      {:on-click #(copy-to-clipboard out-str-json)}
+      "Copy to Clipboard"]]))
 
-(defn io-component []
+(defn output-component []
   [:div
-   (when (db/show-io?)
+   (when (db/show-output?)
      [:div
-      [sequence-input-component]
-      [tree-input-component]
-      [output-component]])
-   [:a {:on-click db/toggle-io! :href "javascript:void(0)"} ; void() is used as a dummy href
-    (if (db/show-io?) "Hide IO Section" "Show IO Section")]])
-
+      [:h2 "Output"]
+      (when (not= (count (db/get-forest)) 1)
+        [:div.alert "Warning: tree is incomplete!"])
+      [qtree-output-component]
+      [json-output-component]])
+   [:a {:on-click db/toggle-output! :href "javascript:void(0)"} ; void() is used as a dummy href
+       (if (db/show-output?) "Hide Output" "Show Output")]])
 
 ;------------------;
 ; Manual component ;
@@ -254,8 +258,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
   deletes all selected nodes and their ancestors.
   Only inner nodes or the last leaf node can be deleted.
 - Pressing `Esc` (or clicking the `Deselect All` button) deselects all nodes.
-- Pressing `i` shows or hides the IO section.
-  Pressing `m` or `?` shows or hides the manual section.
+- Pressing `i` or `o` toggles the input or output section, respectively.
+  Pressing `m` or `?` toggles the manual section.
 - You can also edit an existing qtree string by loading it 
   using the *load qtree string* button.
 
@@ -278,8 +282,10 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
    [:div.content
     [:h1 "Tree Annotation"]
     [manual-component]
-    [io-component]]
+    [input-component]]
    [tree-annotation-component]
+   [:div.content
+    [output-component]]
    [:div.bottom-whitespace]])
 
 (defn render []
@@ -301,7 +307,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
             "Escape" (db/deselect-all)
             "Backspace" (db/delete-selected)
             "Delete" (db/delete-selected)
-            "i" (db/toggle-io!)
+            "i" (db/toggle-input!)
+            "o" (db/toggle-input!)
             "?" (db/toggle-manual!)
             "m" (db/toggle-manual!)
             "e" (db/start-renaming-selected)

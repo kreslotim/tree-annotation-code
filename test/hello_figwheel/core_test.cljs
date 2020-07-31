@@ -7,3 +7,14 @@
 
 ; (deftest multiply-test-2
 ;   (is (= (* 75 10) (multiply 10 75))))
+
+;; JSON import / export
+;; --------------------
+
+
+
+(deftest json-parsing-test
+  (doseq (for [i (range 10)]
+           
+           ))
+  )

@@ -39,7 +39,8 @@
    :strip-math        true
    :forest            []
    :show-manual       true
-   :show-io           true
+   :show-input        true
+   :show-output       false
   }))
 
 ;-----------------------;
@@ -368,13 +369,16 @@ If `strip-math` is `true`, math labels will not have $s."
            :label label
            :children (mapv (partial tree-from-parse strip-math) children))))
 
+(defn parse-qtree-forest [qtree-str strip-math]
+  (let [parse (qtree-parser qtree-str)]
+    (mapv (partial tree-from-parse strip-math) (vec (next parse)))))
+
 (defn load-qtree-string []
   "Replaces the forest by the forest parsed from the qtree input string."
   (swap! db (fn [db]
-              (let [parse (qtree-parser (:input-qtree-str db))
-                    strip-math (:strip-math db)
-                    forest' (mapv (partial tree-from-parse strip-math) (vec (next parse)))]
-                (assoc db :forest forest')))))
+              (let [qtree-str (:input-qtree-str db)
+                    strip-math (:strip-math db)]
+                (assoc db :forest (parse-qtree-forest qtree-str strip-math))))))
 
 ;;; JSON
 
@@ -385,14 +389,17 @@ If `strip-math` is `true`, math labels will not have $s."
            :label label
            :children (mapv tree-from-json children))))
 
+(defn parse-json-forest [json-str]
+  (let [json (js->clj (js/JSON.parse json-str))
+        top (if (map? json) [json] json) ; tree or forest? -> make forest
+        ]
+    (mapv tree-from-json top)))
+
 (defn load-json-string []
   "Replaces the forest by the forest given in the JSON input string."
   (swap! db (fn [db]
-              (let [json-str (:input-json-str db)
-                    json (js->clj (js/JSON.parse json-str))
-                    top (if (map? json) [json] json) ; tree or forest? -> make forest
-                    forest' (mapv tree-from-json top)]
-                (assoc db :forest forest')))))
+              (let [json-str (:input-json-str db)]
+                (assoc db :forest (parse-json-forest json-str))))))
 
 ;---------------------;
 ; visibility requests ;
@@ -404,8 +411,14 @@ If `strip-math` is `true`, math labels will not have $s."
 (defn toggle-manual! []
   (swap! db update :show-manual not))
 
-(defn show-io? []
-  (@db :show-io))
+(defn show-input? []
+  (@db :show-input))
 
-(defn toggle-io! []
-  (swap! db update :show-io not))
+(defn toggle-input! []
+  (swap! db update :show-input not))
+
+(defn show-output? []
+  (@db :show-output))
+
+(defn toggle-output! []
+  (swap! db update :show-output not))
