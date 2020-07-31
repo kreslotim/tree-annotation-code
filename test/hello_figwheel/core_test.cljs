@@ -10,11 +10,3 @@
 
 ;; JSON import / export
 ;; --------------------
-
-
-
-(deftest json-parsing-test
-  (doseq (for [i (range 10)]
-           
-           ))
-  )
