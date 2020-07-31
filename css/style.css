@@ -29,8 +29,14 @@ html, button, input, select, textarea,
 }
 
 .manual {
-    border: solid;
-    padding: 2em;
+    /* border: solid; */
+    /* padding: 2em; */
+}
+
+code {
+    background: #eee;
+    padding: 2px;
+    border-radius: 2px;
 }
 
 .button-delete {
