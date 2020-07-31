@@ -10,7 +10,29 @@
 ; private annotation does currently not work in clojure script
 (defonce ^:private db (r/atom 
   {:input-str         "Dm G7 C"
-   :input-tree-str    "[.$C$ [.$G7$ $Dm$ $G7$ ] $C$ ] "
+   :input-qtree-str   "[.$C$ [.$G7$ $Dm$ $G7$ ] $C$ ] "
+   :input-json-str    "{
+  \"label\": \"C\",
+  \"children\": [
+    {
+      \"label\": \"G7\",
+      \"children\": [
+        {
+          \"label\": \"Dm\",
+          \"children\": []
+        },
+        {
+          \"label\": \"G7\",
+          \"children\": []
+        }
+      ]
+    },
+    {
+      \"label\": \"C\",
+      \"children\": []
+    }
+  ]
+}"
    :math-inner        true
    :math-leaves       true
    :pretty-print-json false
@@ -34,17 +56,27 @@
 ; Input tree string requests ;
 ;----------------------------;
 
-(defn get-input-tree-str []
-  (:input-tree-str @db))
+;; qtree
 
-(defn set-input-tree-str [input-tree-str]
-  (swap! db assoc :input-tree-str (str/trim-newline input-tree-str)))
+(defn get-input-qtree-str []
+  (:input-qtree-str @db))
+
+(defn set-input-qtree-str [input-tree-str]
+  (swap! db assoc :input-qtree-str (str/trim-newline input-tree-str)))
 
 (defn strip-math? []
   (:strip-math @db))
 
 (defn toggle-strip-math! []
   (swap! db update :strip-math not))
+
+;; JSON
+
+(defn get-input-json-str []
+  (:input-json-str @db))
+
+(defn set-input-json-str [input-tree-str]
+  (swap! db assoc :input-json-str (str/trim-newline input-tree-str)))
 
 ;------------------------;
 ; Output string requests ;
@@ -87,8 +119,14 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 (defn get-output-str-json []
   (let [db @db
         forest (:forest db)
-        indent (if (:pretty-print-json db) 2 0)]
-    (str/join "\n\n" (map #(.stringify js/JSON (clj->js (tree-json %)) nil indent) forest))))
+        indent (if (:pretty-print-json db) 2 0)
+        json-forest (mapv tree-json forest)
+        top (if (= (count json-forest) 1)
+              (first json-forest)
+              json-forest)]
+    (.stringify js/JSON (clj->js top) nil indent)
+    ;;(str/join "\n\n" (map #(.stringify js/JSON (clj->js (tree-json %)) nil indent) forest))
+    ))
 
 (defn math-inner? []
   (:math-inner @db))
@@ -292,6 +330,8 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 ;; parse
 ;; -----
 
+;;; qtree
+
 (defparser qtree-parser "
   forest   = node*
   node     = (label | <'[.'> label children <']'>) <#'\\s*'>
@@ -328,12 +368,30 @@ If `strip-math` is `true`, math labels will not have $s."
            :label label
            :children (mapv (partial tree-from-parse strip-math) children))))
 
-(defn load-tree-string []
+(defn load-qtree-string []
   "Replaces the forest by the forest parsed from the qtree input string."
   (swap! db (fn [db]
-              (let [parse (qtree-parser (:input-tree-str db))
+              (let [parse (qtree-parser (:input-qtree-str db))
                     strip-math (:strip-math db)
                     forest' (mapv (partial tree-from-parse strip-math) (vec (next parse)))]
+                (assoc db :forest forest')))))
+
+;;; JSON
+
+(defn tree-from-json [node]
+  (let [label    (get node "label")
+        children (get node "children")]
+    (assoc default-node
+           :label label
+           :children (mapv tree-from-json children))))
+
+(defn load-json-string []
+  "Replaces the forest by the forest given in the JSON input string."
+  (swap! db (fn [db]
+              (let [json-str (:input-json-str db)
+                    json (js->clj (js/JSON.parse json-str))
+                    top (if (map? json) [json] json) ; tree or forest? -> make forest
+                    forest' (mapv tree-from-json top)]
                 (assoc db :forest forest')))))
 
 ;---------------------;

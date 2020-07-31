@@ -107,11 +107,11 @@ and some buttons for interaction."
    [:h2 "Input (qtree string)"]
    [:div.pure-form.pure-g
     [:textarea.pure-input-1
-     {:value (db/get-input-tree-str)
-      :on-change #(db/set-input-tree-str (-> % .-target .-value))
+     {:value (db/get-input-qtree-str)
+      :on-change #(db/set-input-qtree-str (-> % .-target .-value))
       :on-key-down (fn [ev]
                      (when (= (.-key ev) "Enter")
-                       (db/load-tree-string)
+                       (db/load-qtree-string)
                        (db/toggle-io!)
                        false))}]
     [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
@@ -123,9 +123,25 @@ and some buttons for interaction."
      ]
     [:div.pure-u-1.pure-u-md-1-2]
     [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
-     {:on-click #(do (db/load-tree-string)
+     {:on-click #(do (db/load-qtree-string)
                      (db/toggle-io!))}
-     "Load QTree String"]]])
+     "Load QTree String"]]
+   [:h2 "Input (JSON)"]
+   [:div.pure-form.pure-g
+    [:textarea.pure-input-1
+     {:value (db/get-input-json-str)
+      :on-change #(db/set-input-json-str (-> % .-target .-value))
+      :on-key-down (fn [ev]
+                     (when (= (.-key ev) "Enter")
+                       (db/load-json-string)
+                       (db/toggle-io!)
+                       false))}]
+    [:div.pure-u-1.pure-u-md-3-4]
+    [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
+     {:on-click #(do (db/load-json-string)
+                     (db/toggle-io!))}
+     "Load JSON String"]]
+   ])
 
 ;------------------;
 ; Output component ;
