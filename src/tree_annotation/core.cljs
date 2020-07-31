@@ -308,7 +308,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
             "Backspace" (db/delete-selected)
             "Delete" (db/delete-selected)
             "i" (db/toggle-input!)
-            "o" (db/toggle-input!)
+            "o" (db/toggle-output!)
             "?" (db/toggle-manual!)
             "m" (db/toggle-manual!)
             "e" (db/start-renaming-selected)
