@@ -239,7 +239,7 @@ and some buttons for interaction."
     (js/document.execCommand "copy")
     (.removeChild js/document.body el)))
 
-(def base-url "localhost:9500/")
+(def base-url "https://dcmlab.github.io/tree-annotation-code/")
 
 (defn link-output-component []
   (let [out-str-b64 (db/get-output-str-b64)
