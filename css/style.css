@@ -84,6 +84,7 @@ textarea {
 .tree {
     margin-left: auto;
     margin-right: auto;
+    width: min-content;
     /* position: relative; */
 }
 
