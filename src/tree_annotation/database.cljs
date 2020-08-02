@@ -114,17 +114,18 @@ of inner and leaf nodes should be enclosed in $s, respecively."
     {:label label
      :children (mapv tree-json children)}))
 
-(defn get-output-str-json []
-  (let [db @db
-        forest (:forest db)
-        indent (if (:pretty-print-json db) 2 0)
+(defn get-json-str [db indent]
+  (let [forest (:forest db)
         json-forest (mapv tree-json forest)
         top (if (= (count json-forest) 1)
               (first json-forest)
               json-forest)]
-    (.stringify js/JSON (clj->js top) nil indent)
-    ;;(str/join "\n\n" (map #(.stringify js/JSON (clj->js (tree-json %)) nil indent) forest))
-    ))
+    (.stringify js/JSON (clj->js top) nil indent)))
+
+(defn get-output-str-json []
+  (let [db @db
+        indent (if (:pretty-print-json db) 2 0)]
+    (get-json-str db indent)))
 
 (defn math-inner? []
   (:math-inner @db))
@@ -397,6 +398,14 @@ If `strip-math` is `true`, math labels will not have $s."
   (swap! db (fn [db]
               (let [json-str (:input-json-str db)]
                 (assoc db :forest (parse-json-forest json-str))))))
+
+;;; base64
+
+(defn load-b64-string [b64-str]
+  (swap! db assoc :forest (parse-json-forest (js/atob b64-str))))
+
+(defn get-output-str-b64 []
+  (js/btoa (get-json-str @db 0)))
 
 ;---------------------;
 ; visibility requests ;

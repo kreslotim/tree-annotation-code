@@ -239,6 +239,15 @@ and some buttons for interaction."
     (js/document.execCommand "copy")
     (.removeChild js/document.body el)))
 
+(def base-url "localhost:9500/")
+
+(defn link-output-component []
+  (let [out-str-b64 (db/get-output-str-b64)
+        href (str base-url "?tree=" out-str-b64)]
+    [:div
+     [:h3 "Share this Tree"]
+     [:a {:href href} "Link to This Tree"]]))
+
 (defn qtree-output-component []
   (let [out-str-qtree (db/get-output-str-qtree)]
     [:div.pure-form.pure-g
@@ -289,6 +298,7 @@ and some buttons for interaction."
       ;;[:h2 "Output"]
       (when (> (count (db/get-forest)) 1)
         [:div.alert "Warning: tree is incomplete!"])
+      [link-output-component]
       [qtree-output-component]
       [json-output-component]])
    #_[:button.pure-button {:on-click db/toggle-output!} ; void() is used as a dummy href
@@ -391,6 +401,11 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
    [:div.bottom-whitespace]])
 
 (defn render []
+  (let [params (new js/URLSearchParams. (.. js/window -location -search))
+        tree (.get params "tree")]
+    (when tree
+      (db/load-b64-string tree)
+      (db/toggle-preview!)))
   (rdom/render [app-component] (js/document.getElementById "app")))
 
 (render)
