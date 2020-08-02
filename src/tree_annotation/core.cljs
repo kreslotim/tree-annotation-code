@@ -73,6 +73,82 @@ and some buttons for interaction."
             forest
             (range length))))])
 
+;------------------------;
+; tree preview component ;
+;------------------------;
+
+(def svg-scale 50)
+
+(defn svg-align-subtrees [subtrees]
+  "takes a list of subtree elements and returns a new element with aligned subtrees"
+  (let [maxh (reduce max (map (comp :h :coords) subtrees))
+        [svgs wtotal]
+        (reduce (fn [[elts wtotal] {{w :w h :h} :coords subtree :svg}]
+                  (let [x wtotal
+                        y (inc (- maxh h))
+                        svg [:svg
+                             {:x (* svg-scale x) :y (* svg-scale y)
+                              :style {:overflow "visible"}}
+                             subtree]
+                        elt {:coords {:x x :y y :w w :h h}
+                             :svg svg}
+                        elts' (conj elts elt)]
+                    [elts' (+ wtotal w)]))
+                [[] 0]
+                subtrees)]
+    {:coords {:w wtotal :h maxh}
+     :svg (into [:g] (map :svg svgs))
+     :child-coords (mapv :coords svgs)}))
+
+(defn svg-child-line [w h {xc :x wc :w hc :h}]
+  [:line {:x1 (* svg-scale (/ (dec w) 2)) :y1 0
+          :x2 (* svg-scale (+ xc (/ (dec wc) 2))) :y2 (* svg-scale (- (inc h) hc))
+          :stroke "black"}])
+
+(defn svg-label [label x y]
+  [:text {:x x :y y
+          :text-anchor "middle"
+          :dominant-baseline "middle"
+          :filter "url(#clear)"}
+   label])
+
+(defn svg-subtree [node]
+  (let [children (:children node)
+        label (:label node)
+        subtrees (map svg-subtree children)
+        coords (map :coords subtrees)
+        {{w :w h :h} :coords children-svg :svg child-coords :child-coords}
+        (svg-align-subtrees subtrees)]
+    (if (empty? children)
+      ;; leaf
+      {:coords {:w 1 :h 1}
+       :svg (svg-label label 0 0)}
+      ;; inner node
+      {:coords {:w w :h (inc h)}
+       :svg
+       [:svg {:style {:overflow "visible"}}
+        (into [:g] (map (partial svg-child-line w h) child-coords))
+        (svg-label label (* svg-scale (/ (dec w) 2)) 0)
+        children-svg]})))
+
+(defn svg-tree-component []
+  (let [forest (db/get-forest)
+        subtrees (mapv svg-subtree forest)
+        {{w :w h :h} :coords trees-svg :svg} (svg-align-subtrees subtrees)
+        width (* svg-scale (+ w 2))
+        height (* svg-scale (+ h 2))
+        svg (into
+             [:svg {:width width :height height
+                    :viewBox [(- svg-scale) (- svg-scale) width height]
+                    :style {:overflow "visible"}}
+              [:defs [:filter {:x 0 :y 0 :width 1 :height 1 :id "clear"}
+                      [:feFlood {:flood-color "white"}]
+                      [:feComposite {:in "SourceGraphic"}]]]]
+             trees-svg)]
+    [:div#preview.tree
+     (when (db/show-preview?)
+       svg)]))
+
 ;-----------------;
 ; Input component ;
 ;-----------------;
@@ -293,6 +369,10 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
       {:on-click db/toggle-output! :href "javascript:;"}
       "Output"]]
     [:li.pure-menu-item
+     {:class (if (db/show-preview?) "pure-menu-selected" "")}
+     [:a.pure-menu-link
+      {:on-click db/toggle-preview! :href "javascript:;"}
+      "Preview"]][:li.pure-menu-item
      {:class (if (db/show-manual?) "pure-menu-selected" "")}
      [:a.pure-menu-link
       {:on-click db/toggle-manual! :href "javascript:;"}
@@ -306,6 +386,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
     [manual-component]
     [input-component]
     [output-component]]
+   [svg-tree-component]
    [tree-annotation-component]
    [:div.bottom-whitespace]])
 

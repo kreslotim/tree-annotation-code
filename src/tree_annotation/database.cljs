@@ -38,10 +38,7 @@
    :pretty-print-json false
    :strip-math        true
    :forest            []
-   :show-manual       false
-   :show-input        true
-   :show-output       false
-  }))
+   :tab               nil}))
 
 ;-----------------------;
 ; Input string requests ;
@@ -405,38 +402,32 @@ If `strip-math` is `true`, math labels will not have $s."
 ; visibility requests ;
 ;---------------------;
 
+(defn get-tab []
+  (:tab @db))
+
+(defn toggle-tab! [tab]
+  (swap! db update :tab #(if (= % tab) nil tab)))
+
 (defn show-manual? []
-  (@db :show-manual))
+  (= (get-tab) :manual))
 
 (defn toggle-manual! []
-  (swap! db (fn [db]
-              (assoc db
-                     :show-manual (not (:show-manual db))
-                     :show-input false
-                     :show-output false))))
+  (toggle-tab! :manual))
 
 (defn show-input? []
-  (@db :show-input))
-
-;; (defn toggle-input! []
-;;   (swap! db update :show-input not))
+  (= (get-tab) :input))
 
 (defn toggle-input! []
-  (swap! db (fn [db]
-              (assoc db
-                     :show-input (not (:show-input db))
-                     :show-manual false
-                     :show-output false))))
+  (toggle-tab! :input))
 
 (defn show-output? []
-  (@db :show-output))
-
-;; (defn toggle-output! []
-;;   (swap! db update :show-output not))
+  (= (get-tab) :output))
 
 (defn toggle-output! []
-  (swap! db (fn [db]
-              (assoc db
-                     :show-output (not (:show-output db))
-                     :show-manual false
-                     :show-input false))))
+  (toggle-tab! :output))
+
+(defn show-preview? []
+  (= (get-tab) :preview))
+
+(defn toggle-preview! []
+  (toggle-tab! :preview))
