@@ -6,6 +6,11 @@ and the [Digital and Cognitive Musicology Lab (DCML)](https://dcml.epfl.ch)
 
 Find the web app [here](https://dcmlab.github.io/tree-annotation-code/).
 
+## Attribution
+If you use this application or its source code in any way, please cite the the following paper:
+
+D. Harasim, C. Finkensiep, P. Ericson, T. J. O'Donnell, and M. Rohrmeier (2020). The Jazz Harmony Treebank. In *Proceedings of the 21th International Society for Music Information Retrieval Conference*. Montréal, Canada.
+
 ## Funding 
 This project has received funding from the European Research Council
 (ERC) under the European Union's Horizon 2020 research and innovation
