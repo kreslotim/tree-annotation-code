@@ -7,4 +7,14 @@ and the [Digital and Cognitive Musicology Lab (DCML)](https://dcml.epfl.ch)
 Find the web app [here](https://dcmlab.github.io/tree-annotation-code/).
 
 ## Funding 
-This project has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme under grant agreement No 760081 – PMSB and from the Volkswagen Foundation. We thank Claude Latour for supporting this research through the Latour Chair in Digital Musicology.
+This project has received funding from the European Research Council
+(ERC) under the European Union's Horizon 2020 research and innovation
+program under grant agreement No 760081 – PMSB. We gratefully
+acknowledge the support of the Natural Sciences and Engineering
+Research Council of Canada (NSERC), the Fonds de Recherche du
+Qu\'{e}bec, Soci\'{e}t\'{e} et Culture (FRQSC), and the Canada CIFAR
+AI Chairs program. We thank Claude Latour for supporting this research
+through the Latour Chair in Digital Musicology. The authors
+additionally thank the anonymous referees for their valuable comments
+and the members of the Digital and Cognitive Musicology Lab (DCML) for
+fruitful discussions.
