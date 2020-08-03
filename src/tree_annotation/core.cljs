@@ -366,27 +366,32 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 ; App component ;
 ;---------------;
 
+(defn unfocus [action!]
+  (fn [ev]
+    (.. ev -target blur)
+    (action!)))
+
 (defn tab-component []
   [:div.pure-menu.pure-menu-horizontal
    [:ul.pure-menu-list
     [:li.pure-menu-item
      {:class (if (db/show-input?) "pure-menu-selected" "")}
      [:a.pure-menu-link
-      {:on-click db/toggle-input! :href "javascript:;"}
+      {:on-click (unfocus db/toggle-input!) :href "javascript:;"}
       "Input"]]
     [:li.pure-menu-item
      {:class (if (db/show-output?) "pure-menu-selected" "")}
      [:a.pure-menu-link
-      {:on-click db/toggle-output! :href "javascript:;"}
+      {:on-click (unfocus db/toggle-output!) :href "javascript:;"}
       "Output"]]
     [:li.pure-menu-item
      {:class (if (db/show-preview?) "pure-menu-selected" "")}
      [:a.pure-menu-link
-      {:on-click db/toggle-preview! :href "javascript:;"}
+      {:on-click (unfocus db/toggle-preview!) :href "javascript:;"}
       "Preview"]][:li.pure-menu-item
      {:class (if (db/show-manual?) "pure-menu-selected" "")}
      [:a.pure-menu-link
-      {:on-click db/toggle-manual! :href "javascript:;"}
+      {:on-click (unfocus db/toggle-manual!) :href "javascript:;"}
       "Help"]]]])
 
 (defn app-component []
