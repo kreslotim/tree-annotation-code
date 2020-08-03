@@ -347,7 +347,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
   Only inner nodes or the last leaf node can be deleted.
 - Pressing `Esc` (or clicking the `Deselect All` button) deselects all nodes.
 - Pressing `i` or `o` toggles the input or output section, respectively.
-  Pressing `m` or `?` toggles the manual section.
+  Pressing `m`, `h`, or `?` toggles the manual section.
+  Pressing `p` toggles the preview section.
 - You can also edit an existing qtree string by loading it 
   using the *load qtree string* button.
 
@@ -428,6 +429,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
             "o" (db/toggle-output!)
             "?" (db/toggle-manual!)
             "m" (db/toggle-manual!)
+            "h" (db/toggle-manual!)
+            "p" (db/toggle-preview!)
             "e" (db/start-renaming-selected)
             "r" (db/start-renaming-selected)
             nil)
