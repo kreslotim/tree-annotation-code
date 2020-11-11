@@ -21,6 +21,8 @@ If you use this application or its source code in any way, please cite the the f
 
 D. Harasim, C. Finkensiep, P. Ericson, T. J. O'Donnell, and M. Rohrmeier (2020). The Jazz Harmony Treebank. In *Proceedings of the 21th International Society for Music Information Retrieval Conference*. Montréal, Canada.
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4245406.svg)](https://doi.org/10.5281/zenodo.4245406)
+
 ## Funding 
 This project has received funding from the European Research Council
 (ERC) under the European Union's Horizon 2020 research and innovation
