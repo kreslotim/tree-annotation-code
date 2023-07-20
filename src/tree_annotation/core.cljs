@@ -40,16 +40,39 @@
 ; Tree component and tree manipulation ;
 ;--------------------------------------;
 
+(defn arity-input-component []
+  [:div
+   [:div.pure-form.pure-g {:style {:display "flex" :align-items "center" :margin-right "7px" :margin-top "20px"}}
+    [:h4 {:style {:letter-spacing "0px"
+                  :font-weight "lighter"
+                  :margin-right "10px"
+                  :margin-left "20px"}} "Split arity"]
+    [:input.pure-input-1 
+     {:style {:width "60px"}
+      :type "number"
+      :value (db/get-split-arity)
+      :min 1
+      :on-change #(db/set-split-arity (-> % .-target .-value js/parseInt))}]]
+   [:div.pure-u-1.pure-u-md-3-4]])
+
+(defn undo-redo-component []
+  [:div.undo-redo-buttons
+   {:style {:margin-left "-58px"}}
+   [:button.pure-button.button-undo
+    {:on-click db/undo} "Undo"]
+   [:button.pure-button.button-redo
+    {:on-click db/redo} "Redo"]])
+
 (defn tree-component [node index]
   (let [children (:children node)
         length (count children)
-        component (node-component node index)]
-    [:div.subtree
+        component (node-component node index)] 
+     [:div.subtree
      (into [:div.forest.children]
            (mapv (fn [child i] (tree-component child (conj index i)))
                  children
                  (range length)))
-     component]))
+      component]))
 
 (defn tree-annotation-component []
   "Creates a set of components corresponding to the nodes in the database
@@ -58,7 +81,14 @@ and some buttons for interaction."
    [:div.content
     [:h2 "Annotation"]
     [:div.pure-button-group.controls
-     {:role "group"}
+     {:role "group"
+      :style {:display "flex"
+              :align-items "center"
+              :margin-left "60px"}} 
+     [undo-redo-component]
+     [arity-input-component]
+     [:button.pure-button.button-elaborate
+      {:on-click db/elaborate-selected} "Elaborate"]
      [:button.pure-button
       {:on-click db/combine-selected} "Combine"]
      [:button.pure-button
@@ -72,6 +102,7 @@ and some buttons for interaction."
       (mapv (fn [tree i] (tree-component tree [i]))
             forest
             (range length))))])
+
 
 ;------------------------;
 ; tree preview component ;
@@ -340,12 +371,15 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 ###  Additional Functionality
 
 - Double clicking on a node opens a text field to rename that node.
-  Submit the new name by pressing `Enter`.
-  Pressing `e` or `r` opens a text field for every selected node.
+  Submit the new name by pressing `Enter`.Pressing `r` opens a text field for every selected node.
+- Pressing `e` (or clicking the `Elaborate` button) generates child nodes from selected nodes,
+  quantity determined by `Split arity`.
 - Pressing `Delete` or `Backspace` (or clicking the `Delete` button)
   deletes all selected nodes and their ancestors.
   Only inner nodes or the last leaf node can be deleted.
 - Pressing `Esc` (or clicking the `Deselect All` button) deselects all nodes.
+- Pressing `Ctrl+Z` (or clicking the `Undo` button) undoes the last changes.
+- Pressing `Ctrl+Y` (or clicking the `Redo` button) redoes the last undone changes.   
 - Pressing `i` or `o` toggles the input or output section, respectively.
   Pressing `m`, `h`, or `?` toggles the manual section.
   Pressing `p` toggles the preview section.
@@ -358,6 +392,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
   [:div
    (when (db/show-manual?)
      [:div.manual.tab
+      {:style {:line-height "1.5"}}
       (md/md->hiccup manual-string)])
    #_[:a {:on-click db/toggle-manual! :href "javascript:void(0)"} ; void() is used as a dummy href
     (if (db/show-manual?) "Hide Manual" "Show Manual")]])
@@ -427,6 +462,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
         (when (identical? (.-target event) (.-body js/document))
           (case (.-key event)
             "Enter" (db/combine-selected)
+            "c" (db/combine-selected)
             "Escape" (db/deselect-all)
             "Backspace" (db/delete-selected)
             "Delete" (db/delete-selected)
@@ -436,9 +472,17 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
             "m" (db/toggle-manual!)
             "h" (db/toggle-manual!)
             "p" (db/toggle-preview!)
-            "e" (db/start-renaming-selected)
+            "e" (db/elaborate-selected)
             "r" (db/start-renaming-selected)
             nil)
+
+          ;; If ctrl key was pressed
+          (when (.-ctrlKey event)
+            (case (.-key event)
+              "z" (do (db/undo) (.preventDefault event))  ;; Prevent default 'undo' action in browser
+              "y" (do (db/redo) (.preventDefault event))  ;; Prevent default 'redo' action in browser
+              nil))
+          
           (.preventDefault event)
           (.stopPropagation event)
           false)))

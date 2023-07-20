@@ -3,8 +3,10 @@
 ;-------------------------;
 
 (ns tree-annotation.database
-  (:require [reagent.core :as r]
+  (:require [reagent.core :as r] 
+            [clojure.walk :as walk]
             [clojure.string :as str]
+            [cljs.reader :as reader]
             [instaparse.core :as insta :refer-macros [defparser]]))
 
 ; private annotation does currently not work in clojure script
@@ -38,7 +40,46 @@
    :pretty-print-json false
    :strip-math        true
    :forest            []
-   :tab               nil}))
+   :tab               nil
+   :split-arity 2
+   :previous-states []
+   :redone-states []
+   }))
+
+
+;----------------------;
+; Undo & Redo requests ;
+;----------------------;
+
+(defn push-current-state []
+  "Pushes the current state onto the undo stack and cleares the redo stack."
+  (swap! db update :previous-states conj @db)
+  (swap! db assoc :redone-states []))
+
+(defn undo []
+  "Undoes the last action."
+  (let [previous-states (:previous-states @db)]
+    (when (not-empty previous-states)
+      (let [last-state (peek previous-states)
+            new-previous-states (pop previous-states)]
+        ;; Before undoing, add current state to redone-states
+        (swap! db assoc :redone-states (conj (:redone-states @db) @db))
+        ;; Undo, and update previous-states (with last element popped out)
+        (swap! db assoc :forest (:forest last-state)) 
+        (swap! db assoc :previous-states new-previous-states)))))
+
+(defn redo []
+  "Redoes the last undone action."
+  (let [redone-states (:redone-states @db)]
+    (when (not-empty redone-states)
+      (let [last-undone-state (peek redone-states)
+            new-redone-states (pop redone-states)]
+        ;; Before redoing, add current state to previous-states
+        (swap! db assoc :previous-states (conj (:previous-states @db) @db))
+        ;; Redo, and update redone-states (with last element popped out)
+        (swap! db assoc :forest (:forest last-undone-state))
+        (swap! db assoc :redone-states new-redone-states)))))
+
 
 ;-----------------------;
 ; Input string requests ;
@@ -49,6 +90,12 @@
 
 (defn set-input-str [input-str]
   (swap! db assoc :input-str (str/trim-newline input-str)))
+
+(defn get-split-arity []
+  (:split-arity @db))
+
+(defn set-split-arity [arity]
+  (swap! db assoc :split-arity arity))
 
 ;----------------------------;
 ; Input tree string requests ;
@@ -229,7 +276,12 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 
 (defn deselect-all []
   "Deselects all nodes."
+
+  ;; Save the current state
+  (push-current-state)
+
   (swap! db update :forest deselect-all-trees))
+
 
 ;; rename
 ;; ------
@@ -277,6 +329,7 @@ of inner and leaf nodes should be enclosed in $s, respecively."
            :children (deselect-all-trees children)
            :width (reduce + (map :width children)))))
 
+
 (defn combine-selected-trees
   ([forest]
    "Finds groups of adjacent selected trees in `forest` and combines them."
@@ -305,7 +358,41 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 
 (defn combine-selected []
   "Finds groups of adjacent selected trees and combines them."
+
+  ;; Save the current state
+  (push-current-state)
+
   (swap! db update :forest combine-selected-trees))
+
+
+;; elaborate
+;; ---------
+
+(defn create-child [label]
+  "Creates a new child node with a given label."
+  (assoc default-node
+         :label label 
+         :selected false
+         :width 1))
+
+(defn elaborate-node [node]
+  "If the node is a leaf and it is selected, adds `split-arity` children labeled '?'.
+   Otherwise, applies `elaborate-node` to all its children."
+  (if (and (leaf? node) (tree-selected? node))
+    (let [new-children (repeat (:split-arity @db) (create-child "?"))]
+      (assoc node :children new-children))
+    (assoc node :children (map elaborate-node (:children node)))))
+
+
+(defn elaborate-selected []
+  "Finds selected trees and elaborates them."
+
+  ;; Save the current state
+  (push-current-state)
+
+  (swap! db update :forest (fn [forest] (map elaborate-node forest)))
+  (deselect-all))
+
 
 ;; delete
 ;; ------
@@ -322,6 +409,10 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 
 (defn delete-selected []
   "Delete all selected nodes and their ancestors."
+
+  ;; Save the current state
+  (push-current-state)
+
   (letfn [(delete-sel [forest]
             (vec (flatten (map node-delete-selected forest))))]
     (swap! db update :forest delete-sel)))
