@@ -59,6 +59,24 @@ code {
     background: rgb(202,60,60);
 }
 
+.button-elaborate {
+color: black;
+    /* text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); */
+    background: rgb(255,180,80);
+}
+
+.button-undo {
+    color: white;
+    /* text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); */
+    background: rgb(240,80,80);
+}
+
+.button-redo {
+    color: white;
+    /* text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); */
+    background: rgb(0,180,250);
+}
+
 textarea {
     max-width: 100%;
 }
@@ -90,7 +108,10 @@ textarea {
 
 .subtree {
     /* margin-top: 1px; */
+    display: flex;
+    flex-direction: column-reverse;
     margin-right: 2px;
+    margin-top: 2px;
     flex-grow: 1;
     flex-basis: auto;
 }
@@ -100,9 +121,12 @@ textarea {
 }
 
 .children {
-    margin-bottom: 2px;
+    margin-bottom: 0px;
+    margin-top: 0px;
     width: 100%;
+    flex-grow: 1;
 }
+
 
 .node {
     /* position: absolute; */
