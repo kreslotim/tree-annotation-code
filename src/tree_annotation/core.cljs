@@ -107,7 +107,6 @@
 
 (defn undo-redo-component []
   [:div.undo-redo-buttons
-   {:style {:margin-left "-58px"}}
    [:button.pure-button
     {:on-click db/undo} "↩"]
    [:button.pure-button
