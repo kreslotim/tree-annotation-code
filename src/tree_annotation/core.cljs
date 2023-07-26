@@ -153,7 +153,7 @@
     [:button.pure-button.button-new-left
      {:on-click (fn [e]
                   (db/add-left)
-                  (.blur (.-currentTarget e)))} "New-Left"]
+                  (.blur (.-currentTarget e)))} "⬅️"]
     (into
      [:div.tree.forest]
      (let [forest (db/get-forest)
@@ -164,7 +164,7 @@
     [:button.pure-button.button-new-right
      {:on-click (fn [e]
                   (db/add-right)
-                  (.blur (.-currentTarget e)))} "New-Right"]
+                  (.blur (.-currentTarget e)))} "➡️"]
     [tree-reverse-component]
     [mathbox-component]]])
 
@@ -440,12 +440,15 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 - Pressing `e` (or clicking the `Elaborate` button) generates child nodes from selected nodes,
   quantity determined by `Split arity`.
 - Pressing `u` or `Ctl+E` (or clicking the `Unelaborate` button) unelaborates all selected nodes, by deleting their descendants.
-- Pressing `Delete` or `Backspace` or `Ctrl+U` (or clicking the `Uncombine` button)
+- Pressing `Backspace` or `Ctrl+U` (or clicking the `Uncombine` button) uncombines all selected nodes, 
+  removing their ancestors, unless the node is a leaf. 
+  (Only inner nodes or the last leaf node can be uncombined.)
+- Pressing `Delete` (or clicking the `Delete` button)
   deletes all selected nodes and their ancestors.
-  Only inner nodes or the last leaf node can be deleted.
 - Pressing `Esc` (or clicking the `Deselect All` button) deselects all nodes.
-- Pressing `Ctrl+Z` (or clicking the `Undo` button) undoes the last changes.
-- Pressing `Ctrl+Y` (or clicking the `Redo` button) redoes the last undone changes.   
+- Pressing `Ctrl+Z` (or clicking the `↩` button) undoes the last changes.
+- Pressing `Ctrl+Y` (or clicking the `↪` button) redoes the last undone changes.
+- Use `⬅️` (Left Arrow key) to create a new root node on the tree's left, or `➡️` (Right Arrow key) for a right-side root node.   
 - Pressing `i` or `o` toggles the input or output section, respectively.
   Pressing `m`, `h`, or `?` toggles the manual section.
   Pressing `p` toggles the preview section.
@@ -530,7 +533,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
             "Enter" (db/combine-selected)
             "c" (db/combine-selected)
             "Escape" (db/deselect-all)
-            "Backspace" (db/delete-selected)
+            "Backspace" (db/uncombine-selected)
             "Delete" (db/delete-selected)
             "i" (db/toggle-input!)
             "o" (db/toggle-output!)
@@ -541,6 +544,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
             "e" (db/elaborate-selected)
             "u" (db/unelaborate-selected)
             "r" (db/start-renaming-selected) 
+            "ArrowLeft" (db/add-left)
+            "ArrowRight" (db/add-right)
             nil)
 
           ;; If ctrl key was pressed
