@@ -299,6 +299,9 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 ;; rename
 ;; ------
 
+(defn set! [key value]
+  (swap! db assoc key value))
+
 (defn rename-node [label index]
   "Assings the label `label` to the node at `index`.
    `index` represents the path to a node as a sequence of child indices."
