@@ -115,6 +115,12 @@ color: white;
     top: 0px;
 }
 
+.math-box {
+    position: absolute;
+    right: -235px;
+    top: 20px;
+}
+
 
 textarea {
     max-width: 100%;
@@ -226,5 +232,4 @@ div.node.tree-selected {
 .katex .katex-html {
     display: none;
 }
-
 
