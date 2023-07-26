@@ -104,7 +104,7 @@ color: white;
 
 .button-new-right {
     position: absolute;
-    right: -132px;  /* Adjust as needed */
+    right: -120px;  /* Adjust as needed */
     top: 20px;  /* This aligns the button vertically centered */
     transform: translateY(-50%);  /* This is to counteract the offset from top */
 }
