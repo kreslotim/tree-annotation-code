@@ -90,35 +90,27 @@ color: white;
 }
 
 .wrapper {
-    position: relative;
     width: fit-content;
     margin: 0 auto; /* centers the wrapper */
 }
 
 .button-new-left {
-    position: absolute;
-    left: -120px;  /* Adjust as needed */
-    top: 20px;  /* This aligns the button vertically centered */
     transform: translateY(-50%);  /* This is to counteract the offset from top */
 }
 
 .button-new-right {
-    position: absolute;
-    right: -120px;  /* Adjust as needed */
-    top: 20px;  /* This aligns the button vertically centered */
     transform: translateY(-50%);  /* This is to counteract the offset from top */
 }
 
 .reverse-box {
     position: absolute;
-    right: -260px;
-    top: 0px;
+    margin-top: -20px;
+    margin-left: 20px;
 }
 
 .math-box {
     position: absolute;
-    right: -235px;
-    top: 20px;
+    margin-left: 20px;
 }
 
 
@@ -142,6 +134,7 @@ textarea {
 }
 
 .forest {
+    margin-top: 20px;
     display: flex;
     flex-direction: row;
     width: min-content;
@@ -193,7 +186,10 @@ textarea {
     border-style: solid;
     border-width: thin;
     border-color: #555;
+    display: flex;
     text-align: center;
+    align-items: center;
+    justify-content: center;
     min-width: 10px;
     padding: 0.5em 1em;
     flex-grow: 1;
