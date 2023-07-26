@@ -20,18 +20,26 @@
         true ""))
 
 
-(defn latex-component [label]
+(defn latex-component [label math-tree?]
   (r/create-class
    {:component-did-mount (fn [this] (js/renderMathInElement (rdom/dom-node this)))
     :component-did-update (fn [this _] (js/renderMathInElement (rdom/dom-node this)))
-    :reagent-render (fn [label] [:span {:class "latex"} label])}))
+    :reagent-render (fn [label math-tree?]
+                      (let [single-dollar? (and (clojure.string/starts-with? label "$")
+                                                (clojure.string/ends-with? label "$")
+                                                (not (clojure.string/starts-with? label "$$"))
+                                                (not (clojure.string/ends-with? label "$$")))
+                            double-dollar? (and (clojure.string/starts-with? label "$$")
+                                                (clojure.string/ends-with? label "$$"))]
+                        [:span {:class "latex"} (cond
+                                                  single-dollar? (str "$" label "$")
+                                                  double-dollar? label
+                                                  :else (str "$$" label "$$"))]))}))
 
 (defn node-component [node index]
   "Create a component (a button or text field) from a node."
   (let [label (:label node)
-        latex-label? (and (> (count label) 2)
-                          (clojure.string/starts-with? label "$")
-                          (clojure.string/ends-with? label "$"))]
+        math-tree? (db/math-tree?)]
     (if (:renaming node)
       [:input.node
        {:auto-focus true
@@ -47,28 +55,9 @@
        {:class (selection-class node)
         :on-click #(db/toggle-select! index)
         :on-double-click #(db/start-renaming-node index)}
-       (if latex-label?
-         [latex-component (str "$" label "$")]
-         (str/replace label #"\$" ""))])))  ;; strip the dollar signs for plain text
-
-
-#_(defn node-component [node index]
-  "Create a component (a button or text field) from a node."
-  (if (:renaming node)
-    [:input.node
-     {:auto-focus true
-      :type "text"
-      :value (:label node)
-      :on-change #(db/rename-node (-> % .-target .-value) index)
-      :on-focus #(-> % .-target .select)
-      :on-key-down (fn [ev]
-                     (when (= (.-key ev) "Enter")
-                       (db/stop-renaming-node index)))}]
-    [:div.node
-     {:class (selection-class node)
-      :on-click #(db/toggle-select! index)
-      :on-double-click #(db/start-renaming-node index)}
-     (:label node)]))
+       (if (or (clojure.string/starts-with? label "$") math-tree?)
+         [latex-component label math-tree?]
+         label)])))  ;; just display the plain label text
 
 ;--------------------------------------;
 ; Tree component and tree manipulation ;
@@ -89,8 +78,8 @@
       :on-change #(db/set-split-arity (-> % .-target .-value js/parseInt))}]]
    [:div.pure-u-1.pure-u-md-3-4]])
 
-#_(defn mathbox-component []
-  [:label.pure-u-1.pure-u-md-1-4.pure-checkbox
+(defn mathbox-component []
+  [:label.math-box
    [:input
     {:type "checkbox"
      :checked (db/math-tree?)
@@ -106,7 +95,7 @@
    " Reverse tree"])
 
 (defn undo-redo-component []
-  [:div.undo-redo-buttons
+  [:div.undo-redo-buttons 
    [:button.pure-button
     {:on-click db/undo} "↩"]
    [:button.pure-button
@@ -155,7 +144,11 @@
      [:button.pure-button
       {:on-click (fn [e]
                    (db/deselect-all)
-                   (.blur (.-currentTarget e)))} "Deselect All"]]]
+                   (.blur (.-currentTarget e)))} "Deselect All"]
+     [:button.pure-button.button-delete
+      {:on-click (fn [e]
+                   (db/delete-selected)
+                   (.blur (.-currentTarget e)))} "Delete"]]]
    [:div.wrapper
     [:button.pure-button.button-new-left
      {:on-click (fn [e]
@@ -172,39 +165,8 @@
      {:on-click (fn [e]
                   (db/add-right)
                   (.blur (.-currentTarget e)))} "New-Right"]
-    [tree-reverse-component]]])
-
-
-#_(defn tree-annotation-component []
-  "Creates a set of components corresponding to the nodes in the database
-and some buttons for interaction."
-  [:div
-   [:div.content
-    [:h2 "Annotation"]
-    [:div.pure-button-group.controls
-     {:role "group"
-      :style {:display "flex"
-              :align-items "center"
-              :margin-left "60px"}} 
-     [undo-redo-component]
-     [arity-input-component]
-     [:button.pure-button.button-elaborate
-      {:on-click db/elaborate-selected} "Elaborate"]
-     [:button.pure-button.button-delete
-      {:on-click db/unelaborate-selected} "Unelaborate"] 
-     [:button.pure-button.button-elaborate
-      {:on-click db/combine-selected} "Combine"]
-     [:button.pure-button.button-delete
-      {:on-click db/uncombine-selected} "Uncombine"]
-     [:button.pure-button
-      {:on-click db/deselect-all} "Deselect All"]]]
-   (into
-    [:div.tree.forest]
-    (let [forest (db/get-forest)
-          length (count forest)]
-      (mapv (fn [tree i] (tree-component tree [i]))
-            forest
-            (range length))))])
+    [tree-reverse-component]
+    [mathbox-component]]])
 
 
 ;------------------------;
