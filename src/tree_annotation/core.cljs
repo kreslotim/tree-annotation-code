@@ -36,28 +36,36 @@
                                                   double-dollar? label
                                                   :else (str "$$" label "$$"))]))}))
 
+
 (defn node-component [node index]
   "Create a component (a button or text field) from a node."
   (let [label (:label node)
-        math-tree? (db/math-tree?)]
+        math-tree? (db/math-tree?)
+        input-ref (atom nil)]
     (if (:renaming node)
-      [:input.node
-       {:auto-focus true
-        :type "text"
-        :value label
-        :on-change #(db/rename-node (-> % .-target .-value) index)
-        :on-focus #(-> % .-target .select)
-        :on-blur #(db/stop-renaming-node index)
-        :on-key-down (fn [ev]
-                       (when (= (.-key ev) "Enter")
-                         (db/stop-renaming-node index)))}]
+      (let [set-input-ref (fn [element]
+                            (reset! input-ref element)
+                            (when element
+                              (set! (.-value element) label)
+                              (.focus element)))]
+        [:input.node
+         {:ref set-input-ref
+          :type "text"
+          :on-change #(db/rename-node (-> % .-target .-value) index)
+          :on-blur #(db/stop-renaming-node index)
+          :on-key-down (fn [ev]
+                         (when (= (.-key ev) "Enter")
+                           (db/stop-renaming-node index)))}])
       [:div.node
        {:class (selection-class node)
         :on-click #(db/toggle-select! index)
         :on-double-click #(db/start-renaming-node index)}
        (if (or (clojure.string/starts-with? label "$") math-tree?)
          [latex-component label math-tree?]
-         label)])))  ;; just display the plain label text
+         label)])))
+
+
+
 
 ;--------------------------------------;
 ; Tree component and tree manipulation ;
@@ -153,20 +161,20 @@
     [:button.pure-button.button-new-left
      {:on-click (fn [e]
                   (db/add-left)
-                  (.blur (.-currentTarget e)))} "⬅️"]
-    (into
-     [:div.tree.forest]
-     (let [forest (db/get-forest)
-           length (count forest)]
-       (mapv (fn [tree i] (tree-component tree [i]))
-             forest
-             (range length))))
+                  (.blur (.-currentTarget e)))} "⬅"] 
     [:button.pure-button.button-new-right
      {:on-click (fn [e]
                   (db/add-right)
-                  (.blur (.-currentTarget e)))} "➡️"]
+                  (.blur (.-currentTarget e)))} "➡"]
     [tree-reverse-component]
-    [mathbox-component]]])
+    [mathbox-component]]
+   (into
+    [:div.tree.forest]
+    (let [forest (db/get-forest)
+          length (count forest)]
+      (mapv (fn [tree i] (tree-component tree [i]))
+            forest
+            (range length))))])
 
 
 ;------------------------;
@@ -201,31 +209,84 @@
           :x2 (* svg-scale (+ xc (/ (dec wc) 2))) :y2 (* svg-scale (- (inc h) hc))
           :stroke "black"}])
 
-(defn svg-label [label x y]
-  [:text {:x x :y y
-          :text-anchor "middle"
-          :dominant-baseline "middle"
-          :filter "url(#clear)"}
-   label])
 
-(defn svg-subtree [node]
+
+#_(defn svg-label [label x y math-tree?]
+  (let [latex-label (str "$$" label "$$")  ;; or use logic from latex-component
+        html (if (or (clojure.string/starts-with? label "$") math-tree?)
+               [:body [:span {:class "latex"} latex-label]]
+               [:body label])]
+    [:foreignObject {:x x :y y :width "auto" :height "auto"}
+     html]))
+
+#_(defn svg-subtree [node math-tree?]
   (let [children (:children node)
         label (:label node)
-        subtrees (map svg-subtree children)
+        subtrees (map svg-subtree children math-tree?)
         coords (map :coords subtrees)
         {{w :w h :h} :coords children-svg :svg child-coords :child-coords}
         (svg-align-subtrees subtrees)]
     (if (empty? children)
       ;; leaf
       {:coords {:w 1 :h 1}
-       :svg (svg-label label 0 0)}
+       :svg (svg-label label 0 0 math-tree?)}
       ;; inner node
       {:coords {:w w :h (inc h)}
        :svg
        [:svg {:style {:overflow "visible"}}
         (into [:g] (map (partial svg-child-line w h) child-coords))
-        (svg-label label (* svg-scale (/ (dec w) 2)) 0)
+        (svg-label label (* svg-scale (/ (dec w) 2)) 0 math-tree?)
         children-svg]})))
+
+#_(defn svg-tree-component []
+  (r/create-class
+   {:component-did-mount (fn [this] (js/renderMathInElement (rdom/dom-node this)))
+    :component-did-update (fn [this _] (js/renderMathInElement (rdom/dom-node this)))
+    :reagent-render
+    (fn []
+      (let [forest (db/get-forest)
+            math-tree? (db/math-tree?)
+            subtrees (mapv (fn [node] (svg-subtree node math-tree?)) forest)
+            {{w :w h :h} :coords trees-svg :svg} (svg-align-subtrees subtrees)
+            width (* svg-scale (+ w 2))
+            height (* svg-scale (+ h 2))
+            svg (into
+                 [:svg {:width width :height height
+                        :viewBox [(- svg-scale) (- svg-scale) width height]
+                        :style {:overflow "visible"}}
+                  [:defs [:filter {:x 0 :y 0 :width 1 :height 1 :id "clear"}
+                          [:feFlood {:flood-color "white"}]
+                          [:feComposite {:in "SourceGraphic"}]]]]
+                 trees-svg)]
+        [:div#preview.tree
+         (when (db/show-preview?)
+           svg)]))}))
+
+(defn svg-label [label x y]
+    [:text {:x x :y y
+            :text-anchor "middle"
+            :dominant-baseline "middle"
+            :filter "url(#clear)"}
+     label])
+
+(defn svg-subtree [node]
+    (let [children (:children node)
+          label (:label node)
+          subtrees (map svg-subtree children)
+          coords (map :coords subtrees)
+          {{w :w h :h} :coords children-svg :svg child-coords :child-coords}
+          (svg-align-subtrees subtrees)]
+      (if (empty? children)
+      ;; leaf
+        {:coords {:w 1 :h 1}
+         :svg (svg-label label 0 0)}
+      ;; inner node
+        {:coords {:w w :h (inc h)}
+         :svg
+         [:svg {:style {:overflow "visible"}}
+          (into [:g] (map (partial svg-child-line w h) child-coords))
+          (svg-label label (* svg-scale (/ (dec w) 2)) 0)
+          children-svg]})))
 
 (defn svg-tree-component []
   (let [forest (db/get-forest)
@@ -448,7 +509,9 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 - Pressing `Esc` (or clicking the `Deselect All` button) deselects all nodes.
 - Pressing `Ctrl+Z` (or clicking the `↩` button) undoes the last changes.
 - Pressing `Ctrl+Y` (or clicking the `↪` button) redoes the last undone changes.
-- Use `⬅️` (Left Arrow key) to create a new root node on the tree's left, or `➡️` (Right Arrow key) for a right-side root node.   
+- Use `⬅️` (Left Arrow key) to create a new root node on the tree's left, or `➡️` (Right Arrow key) for a right-side root node.
+- By selecting `Reverse tree` option, you can flip the orientation of the tree, effectively rendering it upside down.
+- By selecting `Math tree` option, you enable the rendering of all tree content using LaTeX format.   
 - Pressing `i` or `o` toggles the input or output section, respectively.
   Pressing `m`, `h`, or `?` toggles the manual section.
   Pressing `p` toggles the preview section.
