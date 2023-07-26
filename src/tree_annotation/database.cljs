@@ -331,31 +331,6 @@ of inner and leaf nodes should be enclosed in $s, respecively."
     (swap! db update :forest #(mapv start-renaming-if-selected %))))
 
 
-
-;; delete
-;; ------
-
-(defn node-delete-selected [node]
-  "Deletes all selected descendants of `node` (including `node` itself) and their ancestors.
-   Returns either the unchanged node or, if any node was deleted,
-   a list of remaining subtrees."
-  (let [subtrees (mapv node-delete-selected (:children node))]
-    (if (or (and (:selected node) (not (leaf? node))) ; node selected?     -> delete node
-            (not-every? map? subtrees))               ; any child deleted? -> delete node
-      (vec (flatten subtrees))                        ; delete node by returning chilren
-      node)))                                         ; keep node
-
-(defn delete-selected []
-  "Delete all selected nodes and their ancestors."
-
-  ;; Save the current state
-  (push-current-state)
-
-  (letfn [(delete-sel [forest]
-            (vec (flatten (map node-delete-selected forest))))]
-    (swap! db update :forest delete-sel)))
-
-
 ;; combine
 ;; -------
 
@@ -436,8 +411,25 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 ;; uncombine
 ;; ---------
 
-(defn uncombine-selected [] 
-  (delete-selected)) ;; same as delete
+(defn node-uncombine-selected [node]
+  "Deletes all selected descendants of `node` (including `node` itself) and their ancestors.
+   Returns either the unchanged node or, if any node was deleted,
+   a list of remaining subtrees."
+  (let [subtrees (mapv node-uncombine-selected (:children node))]
+    (if (or (and (:selected node) (not (leaf? node))) ; node selected?     -> delete node
+            (not-every? map? subtrees))               ; any child deleted? -> delete node
+      (vec (flatten subtrees))                        ; delete node by returning chilren
+      node)))                                         ; keep node
+
+(defn uncombine-selected []
+  "Delete all selected nodes and their ancestors, if not a leaf."
+
+  ;; Save the current state
+  (push-current-state)
+
+  (letfn [(delete-sel [forest]
+            (vec (flatten (map node-uncombine-selected forest))))]
+    (swap! db update :forest delete-sel)))
 
 
 ;; unelaborate
@@ -459,6 +451,31 @@ of inner and leaf nodes should be enclosed in $s, respecively."
   ;; Update the forest
   (swap! db update :forest (fn [forest]
                              (mapv node-unelaborate-selected forest))))
+
+
+
+;; delete
+;; ------
+
+(defn node-delete-selected [node]
+  "Deletes all selected descendants of `node` (including `node` itself) and their ancestors.
+   Returns either the unchanged node or, if any node was deleted,
+   a list of remaining subtrees."
+  (let [subtrees (mapv node-delete-selected (:children node))]
+    (if (or (:selected node)            ; node selected?     -> delete node
+            (not-every? map? subtrees)) ; any child deleted? -> delete node
+      (vec (flatten subtrees))          ; delete node by returning chilren
+      node)))                           ; keep node
+
+(defn delete-selected []
+  "Delete all selected nodes and their ancestors."
+
+  ;; Save the current state
+  (push-current-state)
+
+  (letfn [(delete-sel [forest]
+            (vec (flatten (map node-delete-selected forest))))]
+    (swap! db update :forest delete-sel)))
 
 
 ;; add-left
