@@ -61,7 +61,7 @@
         :on-click #(db/toggle-select! index)
         :on-double-click #(db/start-renaming-node index)}
        (if (or (clojure.string/starts-with? label "$") math-tree?)
-         [latex-component label math-tree?]
+         [latex-component label]
          label)])))
 
 
@@ -181,12 +181,6 @@
 ; tree preview component ;
 ;------------------------;
 
-(defn latex-component1 [label]
-  (r/create-class
-   {:component-did-mount (fn [this] (js/renderMathInElement (rdom/dom-node this)))
-    :component-did-update (fn [this _] (js/renderMathInElement (rdom/dom-node this)))
-    :reagent-render (fn [label] [:span {:class "latex"} label])}))
-
 (def svg-scale 50)
 
 (defn svg-align-subtrees [subtrees]
@@ -213,23 +207,21 @@
 (defn svg-child-line [w h {xc :x wc :w hc :h}]
   [:line {:x1 (* svg-scale (/ (dec w) 2)) :y1 0
           :x2 (* svg-scale (+ xc (/ (dec wc) 2))) :y2 (* svg-scale (- (inc h) hc))
-          :stroke "black"}])
+          :stroke "grey"}])
 
 (defn svg-label [label x y]
   (let [position {:x (* svg-scale x) :y (* svg-scale y)}]
-    (if (db/math-tree?)
+    (if (or (clojure.string/starts-with? label "$") (db/math-tree?))
       [:g 
        [:text {:style {:visibility "hidden"} :x (:x position) :y (:y position)
                :text-anchor "middle"
                :dominant-baseline "middle"
                :filter "url(#clear)"} label]
-       [:foreignObject {:x (+ (:x position) -49) :y (+ (:y position) -12)
-                        :width 100 :height 20} ;; Arbitrary width/height
+       [:foreignObject {:x (+ (:x position) -49) :y (+ (:y position) -10)
+                        :width 100 :height 100} ;; Arbitrary width/height
         [latex-component label]]]
       [:text (merge position {:text-anchor "middle" :dominant-baseline "middle"
                               :filter "url(#clear)"}) label])))
-
-
 
 
 (defn svg-subtree [node]
@@ -262,7 +254,7 @@
              [:svg {:width width :height height
                     :viewBox [(- svg-scale) (- svg-scale) width height]
                     :style {:overflow "visible"}}
-              [:defs [:filter {:x 0 :y 0 :width 1 :height 1 :id "clear"}
+              [:defs [:filter {:x 0 :y -0.1 :width 1 :height 1.5 :id "clear"}
                       [:feFlood {:flood-color "white"}]
                       [:feComposite {:in "SourceGraphic"}]]]]
              trees-svg)]
@@ -270,138 +262,6 @@
      (when (db/show-preview?)
        svg)]))
 
-
-
-
-#_(def svg-scale 50)
-
-#_(defn svg-align-subtrees [subtrees]
-  "takes a list of subtree elements and returns a new element with aligned subtrees"
-  (let [maxh (reduce max (map (comp :h :coords) subtrees))
-        [svgs wtotal]
-        (reduce (fn [[elts wtotal] {{w :w h :h} :coords subtree :svg}]
-                  (let [x wtotal
-                        y (inc (- maxh h))
-                        svg [:svg
-                             {:x (* svg-scale x) :y (* svg-scale y)
-                              :style {:overflow "visible"}}
-                             subtree]
-                        elt {:coords {:x x :y y :w w :h h}
-                             :svg svg}
-                        elts' (conj elts elt)]
-                    [elts' (+ wtotal w)]))
-                [[] 0]
-                subtrees)]
-    {:coords {:w wtotal :h maxh}
-     :svg (into [:g] (map :svg svgs))
-     :child-coords (mapv :coords svgs)}))
-
-#_(defn svg-child-line [w h {xc :x wc :w hc :h}]
-  [:line {:x1 (* svg-scale (/ (dec w) 2)) :y1 0
-          :x2 (* svg-scale (+ xc (/ (dec wc) 2))) :y2 (* svg-scale (- (inc h) hc))
-          :stroke "black"}])
-
-
-#_(defn svg-label [label x y]
-    [:text {:x x :y y
-            :text-anchor "middle"
-            :dominant-baseline "middle"
-            :filter "url(#clear)"}
-     label])
-
-#_(defn svg-subtree [node]
-    (let [children (:children node)
-          label (:label node)
-          subtrees (map svg-subtree children)
-          coords (map :coords subtrees)
-          {{w :w h :h} :coords children-svg :svg child-coords :child-coords}
-          (svg-align-subtrees subtrees)]
-      (if (empty? children)
-      ;; leaf
-        {:coords {:w 1 :h 1}
-         :svg (svg-label label 0 0)}
-      ;; inner node
-        {:coords {:w w :h (inc h)}
-         :svg
-         [:svg {:style {:overflow "visible"}}
-          (into [:g] (map (partial svg-child-line w h) child-coords))
-          (svg-label label (* svg-scale (/ (dec w) 2)) 0)
-          children-svg]})))
-
-#_(defn svg-tree-component []
-  (let [forest (db/get-forest)
-        subtrees (mapv svg-subtree forest)
-        {{w :w h :h} :coords trees-svg :svg} (svg-align-subtrees subtrees)
-        width (* svg-scale (+ w 2))
-        height (* svg-scale (+ h 2))
-        svg (into
-             [:svg {:width width :height height
-                    :viewBox [(- svg-scale) (- svg-scale) width height]
-                    :style {:overflow "visible"}}
-              [:defs [:filter {:x 0 :y 0 :width 1 :height 1 :id "clear"}
-                      [:feFlood {:flood-color "white"}]
-                      [:feComposite {:in "SourceGraphic"}]]]]
-             trees-svg)]
-    [:div#preview.tree
-     (when (db/show-preview?)
-       svg)]))
-
-
-
-
-
-
-
-#_(defn svg-label [label x y math-tree?]
-    (let [latex-label (str "$$" label "$$")  ;; or use logic from latex-component
-          html (if (or (clojure.string/starts-with? label "$") math-tree?)
-                 [:body [:span {:class "latex"} latex-label]]
-                 [:body label])]
-      [:foreignObject {:x x :y y :width "auto" :height "auto"}
-       html]))
-
-#_(defn svg-subtree [node math-tree?]
-    (let [children (:children node)
-          label (:label node)
-          subtrees (map svg-subtree children math-tree?)
-          coords (map :coords subtrees)
-          {{w :w h :h} :coords children-svg :svg child-coords :child-coords}
-          (svg-align-subtrees subtrees)]
-      (if (empty? children)
-      ;; leaf
-        {:coords {:w 1 :h 1}
-         :svg (svg-label label 0 0 math-tree?)}
-      ;; inner node
-        {:coords {:w w :h (inc h)}
-         :svg
-         [:svg {:style {:overflow "visible"}}
-          (into [:g] (map (partial svg-child-line w h) child-coords))
-          (svg-label label (* svg-scale (/ (dec w) 2)) 0 math-tree?)
-          children-svg]})))
-
-#_(defn svg-tree-component []
-    (r/create-class
-     {:component-did-mount (fn [this] (js/renderMathInElement (rdom/dom-node this)))
-      :component-did-update (fn [this _] (js/renderMathInElement (rdom/dom-node this)))
-      :reagent-render
-      (fn []
-        (let [forest (db/get-forest)
-              math-tree? (db/math-tree?)
-              subtrees (mapv (fn [node] (svg-subtree node math-tree?)) forest)
-              {{w :w h :h} :coords trees-svg :svg} (svg-align-subtrees subtrees)
-              width (* svg-scale (+ w 2))
-              height (* svg-scale (+ h 2))
-              svg (into
-                   [:svg {:width width :height height
-                          :viewBox [(- svg-scale) (- svg-scale) width height]
-                          :style {:overflow "visible"}}
-                    [:defs [:filter {:x 0 :y 0 :width 1 :height 1 :id "clear"}
-                            [:feFlood {:flood-color "white"}]
-                            [:feComposite {:in "SourceGraphic"}]]]]
-                   trees-svg)]
-          [:div#preview.tree
-           (when (db/show-preview?)
-             svg)]))}))
 
 ;-----------------;
 ; Input component ;
