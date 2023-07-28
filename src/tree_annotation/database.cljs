@@ -518,30 +518,6 @@ of inner and leaf nodes should be enclosed in $s, respecively."
                  (set! -download "preview.png")
                  .click)))))
 
-#_(defn save-forest []
-  (let [katexHtmls (js/document.getElementsByClassName "katex-html")
-        katexMathMLs (js/document.getElementsByClassName "katex-mathml")]
-
-    (dotimes [i (.-length katexHtmls)]
-      (set! (.-style (aget katexHtmls i)) "display: block;"))
-
-    (dotimes [i (.-length katexMathMLs)]
-      (set! (.-style (aget katexMathMLs i)) "display: none;"))
-
-    (-> (js/html2canvas (js/document.getElementById "forest"))
-        (.then (fn [canvas]
-                 (doto (js/document.createElement "a")
-                   (set! -href (.toDataURL canvas "image/png"))
-                   (set! -download "forest.png")
-                   .click))))
-
-    (dotimes [i (.-length katexHtmls)]
-      (set! (.-style (aget katexHtmls i)) "display: none;"))
-
-    (dotimes [i (.-length katexMathMLs)]
-      (set! (.-style (aget katexMathMLs i)) "display: block;"))))
-
-
 (defn save-forest [] 
   (-> (js/html2canvas (js/document.getElementById "forest"))
       (.then (fn [canvas]
@@ -550,16 +526,6 @@ of inner and leaf nodes should be enclosed in $s, respecively."
                  (set! (.-href link) data)
                  (set! (.-download link) "forest.png")
                  (.click link))))))
-
-#_(defn save-forest []
-  (dotimes [i (.-length (js/document.getElementsByClassName "katex-html"))]
-    (.remove (aget (js/document.getElementsByClassName "katex-html") 0)))
-  (-> (js/html2canvas (js/document.getElementById "forest"))
-      (.then (fn [canvas]
-               (doto (js/document.createElement "a")
-                 (set! -href (.toDataURL canvas "image/png"))
-                 (set! -download "forest.png")
-                 .click)))))
 
 ;; parse
 ;; -----
