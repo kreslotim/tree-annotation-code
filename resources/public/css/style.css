@@ -193,7 +193,9 @@ textarea {
     min-width: 10px;
     padding: 0.5em 1em;
     flex-grow: 1;
+    
 }
+
 
 div.node {
     cursor: pointer;
@@ -222,7 +224,8 @@ div.node.tree-selected {
     border: 0;
     height: auto; 
     width: auto; 
-    overflow: visible;
+    overflow: hidden;
+    display: block;
 }
 
 .katex .katex-html {
