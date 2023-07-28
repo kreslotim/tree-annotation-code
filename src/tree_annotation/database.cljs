@@ -508,7 +508,7 @@ of inner and leaf nodes should be enclosed in $s, respecively."
 ;; screenshot
 ;; ----------
 
-(defn save-preview []
+#_(defn save-preview []
   (dotimes [i (.-length (js/document.getElementsByClassName "katex-html"))]
     (.remove (aget (js/document.getElementsByClassName "katex-html") 0)))
   (-> (js/html2canvas (js/document.getElementById "preview"))
@@ -518,14 +518,30 @@ of inner and leaf nodes should be enclosed in $s, respecively."
                  (set! -download "preview.png")
                  .click)))))
 
-(defn save-forest [] 
-  (-> (js/html2canvas (js/document.getElementById "forest"))
+(defn save-preview []
+  (let [svg-content (js/document.getElementById "preview")
+        katex-html-elements (.. svg-content (getElementsByClassName "katex-html"))]
+    (dotimes [i (.-length katex-html-elements)]
+      (set! (.-style.display (aget katex-html-elements i)) "none"))
+    (let [serializer (js/XMLSerializer.)
+          serialized-svg (.serializeToString serializer svg-content)
+          blob (js/Blob. (clj->js [serialized-svg]) (clj->js {:type "image/svg+xml;charset=utf-8"}))
+          url (.createObjectURL js/URL blob)
+          link (js/document.createElement "a")]
+      (set! (.-href link) url)
+      (set! (.-download link) "preview.svg")
+      (.click link))))
+
+
+(defn save-forest []
+  (-> (js/html2canvas (js/document.getElementById "forest") {:scale 5})  ; Increase the scale for a more detailed screenshot
       (.then (fn [canvas]
                (let [link (js/document.createElement "a")
                      data (.toDataURL canvas "image/png")]
                  (set! (.-href link) data)
                  (set! (.-download link) "forest.png")
                  (.click link))))))
+
 
 ;; parse
 ;; -----
