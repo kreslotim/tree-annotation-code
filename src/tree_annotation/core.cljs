@@ -176,7 +176,7 @@
     [tree-reverse-component]
     [mathbox-component]]
    (into
-    [:div#forest.tree.forest]
+    [:div#forest.tree.forest {:style {:padding "20px"}}]
     (let [forest (db/get-forest)
           length (count forest)]
       (mapv (fn [tree i] (tree-component tree [i]))
@@ -267,7 +267,7 @@
                       [:feFlood {:flood-color "white"}]
                       [:feComposite {:in "SourceGraphic"}]]]]
              trees-svg)]
-    [:div#preview.tree 
+    [:div#preview.tree  
      (when (db/show-preview?)
        svg)]))
 
