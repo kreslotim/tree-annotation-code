@@ -220,7 +220,7 @@ div.node.tree-selected {
 .katex .katex-mathml {
     position: static;
     clip: auto;
-    padding: 0;
+    padding: 3px;
     border: 0;
     height: auto; 
     width: auto; 
