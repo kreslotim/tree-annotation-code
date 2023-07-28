@@ -104,11 +104,17 @@
    " Reverse tree"])
 
 (defn undo-redo-component []
+  [:div
   [:div.undo-redo-buttons 
    [:button.pure-button
     {:on-click db/undo} "↩"]
    [:button.pure-button
-    {:on-click db/redo} "↪"]])
+    {:on-click db/redo} "↪"]
+   ]
+   [:div
+    [:button {:style {:margin-top "40px"}
+              :on-click db/save-forest}
+     "Save forest"]]])
 
 (defn tree-component [node index]
   (let [children (:children node)
@@ -159,12 +165,7 @@
                    (db/delete-selected)
                    (.blur (.-currentTarget e)))} "Delete"]]]
    
-   [:div.wrapper
-    [:div
-     [:button {:style {:position "relative"
-                       :left "-338px"}
-               :on-click db/save-forest}
-      "Save forest"]]
+   [:div.wrapper 
     [:button.pure-button.button-new-left
      {:on-click (fn [e]
                   (db/add-left)
