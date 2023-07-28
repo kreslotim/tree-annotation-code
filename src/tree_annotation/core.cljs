@@ -103,18 +103,12 @@
      :on-change db/toggle-tree-direction!}]
    " Reverse tree"])
 
-(defn undo-redo-component []
-  [:div
-  [:div.undo-redo-buttons 
+(defn undo-redo-component [] 
+  [:div.undo-redo-buttons {:style {:margin-top "20px"}}
    [:button.pure-button
     {:on-click db/undo} "↩"]
    [:button.pure-button
-    {:on-click db/redo} "↪"]
-   ]
-   [:div
-    [:button {:style {:margin-top "40px"}
-              :on-click db/save-forest}
-     "Save forest"]]])
+    {:on-click db/redo} "↪"]])
 
 (defn tree-component [node index]
   (let [children (:children node)
@@ -138,7 +132,12 @@
     [:h2 "Annotation"]
     [:div.pure-button-group.controls
      {:role "group"}
-     [undo-redo-component]
+     [:div
+      [undo-redo-component]
+      [:button {:style {:position "relative"
+                        :top "20px"}
+                :on-click db/save-forest}
+       "Save forest"]]
      [arity-input-component] 
      [:button.pure-button
       {:on-click (fn [e]
