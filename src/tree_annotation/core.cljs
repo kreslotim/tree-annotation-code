@@ -2,7 +2,7 @@
   (:require [reagent.core :as r]
             [reagent.dom :as rdom]
             [clojure.string :as str]
-            [clojure.pprint :as pp]
+            [clojure.pprint :as pp] 
             [markdown-to-hiccup.core :as md]
             [tree-annotation.database :as db]))
 
@@ -70,6 +70,7 @@
 ;--------------------------------------;
 ; Tree component and tree manipulation ;
 ;--------------------------------------;
+
 
 (defn arity-input-component []
   [:div
@@ -157,7 +158,13 @@
       {:on-click (fn [e]
                    (db/delete-selected)
                    (.blur (.-currentTarget e)))} "Delete"]]]
+   
    [:div.wrapper
+    [:div
+     [:button {:style {:position "relative"
+                       :left "-338px"}
+               :on-click db/save-forest}
+      "Save forest"]]
     [:button.pure-button.button-new-left
      {:on-click (fn [e]
                   (db/add-left)
@@ -169,7 +176,7 @@
     [tree-reverse-component]
     [mathbox-component]]
    (into
-    [:div.tree.forest]
+    [:div#forest.tree.forest]
     (let [forest (db/get-forest)
           length (count forest)]
       (mapv (fn [tree i] (tree-component tree [i]))
@@ -212,8 +219,10 @@
 (defn svg-label [label x y]
   (let [position {:x (* svg-scale x) :y (* svg-scale y)}]
     (if (or (clojure.string/starts-with? label "$") (db/math-tree?))
-      [:g 
-       [:text {:style {:visibility "hidden"} :x (:x position) :y (:y position)
+      [:g
+       [:text {:style {:visibility "hidden"}
+               :x (:x position) 
+               :y (:y position)
                :text-anchor "middle"
                :dominant-baseline "middle"
                :filter "url(#clear)"} label]
@@ -252,7 +261,7 @@
         height (* svg-scale (+ h 2))
         svg (into
              [:svg {:width width :height height
-                    :viewBox [(- svg-scale) (- svg-scale) width height]
+                    :viewBox [(- -24 svg-scale) (- 10 svg-scale) width height]
                     :style {:overflow "visible"}}
               [:defs [:filter {:x 0 :y -0.1 :width 1 :height 1.5 :id "clear"}
                       [:feFlood {:flood-color "white"}]
@@ -343,6 +352,7 @@
 ;------------------;
 ; Output component ;
 ; -----------------;
+
 
 (defn copy-to-clipboard [str]
   (let [el (js/document.createElement "textarea")]
@@ -468,7 +478,8 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
 - Pressing `Ctrl+Y` (or clicking the `↪` button) redoes the last undone changes.
 - Use `⬅️` (Left Arrow key) to create a new root node on the tree's left, or `➡️` (Right Arrow key) for a right-side root node.
 - By selecting `Reverse tree` option, you can flip the orientation of the tree, effectively rendering it upside down.
-- By selecting `Math tree` option, you enable the rendering of all tree content using LaTeX format.   
+- By selecting `Math tree` option, you enable the rendering of all tree content using LaTeX format. 
+  You can also type your input between '$' symbols to render a single label in LaTeX.
 - Pressing `i` or `o` toggles the input or output section, respectively.
   Pressing `m`, `h`, or `?` toggles the manual section.
   Pressing `p` toggles the preview section.
@@ -496,27 +507,37 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
     (action!)))
 
 (defn tab-component []
-  [:div.pure-menu.pure-menu-horizontal
-   [:ul.pure-menu-list
-    [:li.pure-menu-item
-     {:class (if (db/show-input?) "pure-menu-selected" "")}
-     [:a.pure-menu-link
-      {:on-click (unfocus db/toggle-input!) :href "javascript:;"}
-      "Input"]]
-    [:li.pure-menu-item
-     {:class (if (db/show-output?) "pure-menu-selected" "")}
-     [:a.pure-menu-link
-      {:on-click (unfocus db/toggle-output!) :href "javascript:;"}
-      "Output"]]
-    [:li.pure-menu-item
-     {:class (if (db/show-preview?) "pure-menu-selected" "")}
-     [:a.pure-menu-link
-      {:on-click (unfocus db/toggle-preview!) :href "javascript:;"}
-      "Preview"]][:li.pure-menu-item
-     {:class (if (db/show-manual?) "pure-menu-selected" "")}
-     [:a.pure-menu-link
-      {:on-click (unfocus db/toggle-manual!) :href "javascript:;"}
-      "Help"]]]])
+  [:div
+   [:div.pure-menu.pure-menu-horizontal
+    [:ul.pure-menu-list
+     [:li.pure-menu-item
+      {:class (if (db/show-input?) "pure-menu-selected" "")}
+      [:a.pure-menu-link
+       {:on-click (unfocus db/toggle-input!) :href "javascript:;"}
+       "Input"]]
+     [:li.pure-menu-item
+      {:class (if (db/show-output?) "pure-menu-selected" "")}
+      [:a.pure-menu-link
+       {:on-click (unfocus db/toggle-output!) :href "javascript:;"}
+       "Output"]]
+     [:li.pure-menu-item
+      {:class (if (db/show-preview?) "pure-menu-selected" "")}
+      [:a.pure-menu-link
+       {:on-click (unfocus db/toggle-preview!) :href "javascript:;"}
+       "Preview"]]
+     [:li.pure-menu-item
+      {:class (if (db/show-manual?) "pure-menu-selected" "")}
+      [:a.pure-menu-link
+       {:on-click (unfocus db/toggle-manual!) :href "javascript:;"}
+       "Help"]]]]
+
+   (when (db/show-preview?)
+     [:div
+      [:button {:style {:margin-top "10px"}
+                :on-click db/save-preview}
+       "Save preview"]])])
+
+
 
 (defn app-component []
   [:div
