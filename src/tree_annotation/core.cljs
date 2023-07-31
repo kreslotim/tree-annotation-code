@@ -2,7 +2,7 @@
   (:require [reagent.core :as r]
             [reagent.dom :as rdom]
             [clojure.string :as str]
-            [clojure.pprint :as pp] 
+            [clojure.pprint :as pp]
             [markdown-to-hiccup.core :as md]
             [tree-annotation.database :as db]))
 
@@ -10,7 +10,6 @@
 ;----------------;
 ; Node component ;
 ;----------------;
-
 
 (defn selection-class [node]
   "Returns a string of CSS helper classes to add to a node's class attribute
@@ -21,6 +20,7 @@
 
 
 (defn latex-component [label]
+  "Converts node's input to latex format by surrounding the string with '$$' on each side." 
   (r/create-class
    {:component-did-mount (fn [this] (js/renderMathInElement (rdom/dom-node this)))
     :component-did-update (fn [this _] (js/renderMathInElement (rdom/dom-node this)))
@@ -28,13 +28,13 @@
                       (let [single-dollar? (and (clojure.string/starts-with? label "$")
                                                 (clojure.string/ends-with? label "$")
                                                 (not (clojure.string/starts-with? label "$$"))
-                                                (not (clojure.string/ends-with? label "$$")))
-                            double-dollar? (and (clojure.string/starts-with? label "$$")
+                                                (not (clojure.string/ends-with? label "$$"))) ;; If the input is surrounded by '$'
+                            double-dollar? (and (clojure.string/starts-with? label "$$") ;; If the input is surrounded by '$$'
                                                 (clojure.string/ends-with? label "$$"))]
                         [:span {:class "latex"} (cond
-                                                  single-dollar? (str "$" label "$")
-                                                  double-dollar? label
-                                                  :else (str "$$" label "$$"))]))}))
+                                                  single-dollar? (str "$" label "$") ;; If surrounded by '$', add '$'.
+                                                  double-dollar? label ;; If already surrounded by '$$', keep as is.
+                                                  :else (str "$$" label "$$"))]))})) ;; If no '$', add '$$'.
 
 
 (defn node-component [node index]
@@ -66,7 +66,6 @@
 
 
 
-
 ;--------------------------------------;
 ; Tree component and tree manipulation ;
 ;--------------------------------------;
@@ -79,7 +78,7 @@
                   :font-weight "lighter"
                   :margin-right "10px"
                   :margin-left "20px"}} "Split arity"]
-    [:input.pure-input-1 
+    [:input.pure-input-1
      {:style {:width "60px"}
       :type "number"
       :value (db/get-split-arity)
@@ -96,25 +95,27 @@
    " Math tree"])
 
 (defn tree-reverse-component []
-  [:label.reverse-box 
+  [:label.reverse-box
    [:input
     {:type "checkbox"
      :checked (db/tree-reverse?)
      :on-change db/toggle-tree-direction!}]
    " Reverse tree"])
 
-(defn undo-redo-component [] 
+
+(defn undo-redo-component []
   [:div.undo-redo-buttons {:style {:margin-top "20px"}}
    [:button.pure-button
     {:on-click db/undo} "↩"]
    [:button.pure-button
     {:on-click db/redo} "↪"]])
 
+
 (defn tree-component [node index]
   (let [children (:children node)
         length (count children)
         component (node-component node index)
-        reversed (db/tree-reverse?)] 
+        reversed (db/tree-reverse?)]
     [:div.subtree
      {:class (if reversed "subtree reversed" "subtree")}
      component
@@ -138,15 +139,15 @@
                         :top "20px"}
                 :on-click db/save-forest}
        "Save forest"]]
-     [arity-input-component] 
+     [arity-input-component]
      [:button.pure-button
       {:on-click (fn [e]
                    (db/elaborate-selected)
-                    (.blur (.-currentTarget e)))} "Elaborate"]
+                   (.blur (.-currentTarget e)))} "Elaborate"]
      [:button.pure-button.button-uncombine
       {:on-click (fn [e]
                    (db/unelaborate-selected)
-                   (.blur (.-currentTarget e)))} "Unelaborate"] 
+                   (.blur (.-currentTarget e)))} "Unelaborate"]
      [:button.pure-button
       {:on-click (fn [e]
                    (db/combine-selected)
@@ -163,12 +164,12 @@
       {:on-click (fn [e]
                    (db/delete-selected)
                    (.blur (.-currentTarget e)))} "Delete"]]]
-   
-   [:div.wrapper 
+
+   [:div.wrapper
     [:button.pure-button.button-new-left
      {:on-click (fn [e]
                   (db/add-left)
-                  (.blur (.-currentTarget e)))} "⬅"] 
+                  (.blur (.-currentTarget e)))} "⬅"]
     [:button.pure-button.button-new-right
      {:on-click (fn [e]
                   (db/add-right)
@@ -221,7 +222,7 @@
     (if (or (clojure.string/starts-with? label "$") (db/math-tree?))
       [:g
        [:text {:style {:visibility "hidden"}
-               :x (:x position) 
+               :x (:x position)
                :y (:y position)
                :text-anchor "middle"
                :dominant-baseline "middle"
@@ -248,7 +249,7 @@
       {:coords {:w w :h (inc h)}
        :svg
        [:svg {:style {:overflow "visible"}}
-        (into [:g] (map (partial svg-child-line w h) child-coords)) 
+        (into [:g] (map (partial svg-child-line w h) child-coords))
         (svg-label label (* svg-scale (/ (dec w) 100)) 0)
         children-svg]})))
 
@@ -267,7 +268,7 @@
                       [:feFlood {:flood-color "white"}]
                       [:feComposite {:in "SourceGraphic"}]]]]
              trees-svg)]
-    [:div#preview.tree  
+    [:div#preview.tree
      (when (db/show-preview?)
        svg)]))
 
@@ -314,8 +315,7 @@
       {:type "checkbox"
        :checked (db/strip-math?)
        :on-change db/toggle-strip-math!}]
-     " strip math"
-     ]
+     " strip math"]
     [:div.pure-u-1.pure-u-md-1-2]
     [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
      {:on-click #(do (db/load-qtree-string)
@@ -335,8 +335,7 @@
     [:button.pure-button.pure-button-primary.pure-u-1.pure-u-md-1-4
      {:on-click #(do (db/load-json-string)
                      (db/toggle-input!))}
-     "Load JSON String"]]
-   ])
+     "Load JSON String"]]])
 
 (defn input-component []
   [:div
@@ -344,10 +343,9 @@
      [:div.tab
       ;;[:h2 "Input"]
       [sequence-input-component]
-      [tree-input-component]
-      ])
+      [tree-input-component]])
    #_[:a {:on-click db/toggle-input! :href "javascript:void(0)"} ; void() is used as a dummy href
-       (if (db/show-input?) "Hide Input" "Show Input")]])
+      (if (db/show-input?) "Hide Input" "Show Input")]])
 
 ;------------------;
 ; Output component ;
@@ -426,7 +424,7 @@
       [qtree-output-component]
       [json-output-component]])
    #_[:button.pure-button {:on-click db/toggle-output!} ; void() is used as a dummy href
-       (if (db/show-output?) "Hide Output" "Show Output")]])
+      (if (db/show-output?) "Hide Output" "Show Output")]])
 
 ;------------------;
 ; Manual component ;
@@ -495,7 +493,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
       {:style {:line-height "1.5"}}
       (md/md->hiccup manual-string)])
    #_[:a {:on-click db/toggle-manual! :href "javascript:void(0)"} ; void() is used as a dummy href
-    (if (db/show-manual?) "Hide Manual" "Show Manual")]])
+      (if (db/show-manual?) "Hide Manual" "Show Manual")]])
 
 ;---------------;
 ; App component ;
@@ -584,7 +582,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
             "p" (db/toggle-preview!)
             "e" (db/elaborate-selected)
             "u" (db/unelaborate-selected)
-            "r" (db/start-renaming-selected) 
+            "r" (db/start-renaming-selected)
             "ArrowLeft" (db/add-left)
             "ArrowRight" (db/add-right)
             nil)
@@ -597,7 +595,7 @@ This is an open source project. Find the code [here](https://github.com/DCMLab/t
               "u" (do (db/uncombine-selected) (.preventDefault event))
               "e" (do (db/unelaborate-selected) (.preventDefault event))
               nil))
-          
+
           (.preventDefault event)
           (.stopPropagation event)
           false)))
